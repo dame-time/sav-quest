@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Statement Analysis Tester</title>
+    <!-- Add PDF.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      .panel {
+        flex: 1;
+        min-width: 300px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .panel h2 {
+        color: #2980b9;
+        margin-top: 0;
+      }
+      textarea {
+        width: 100%;
+        height: 300px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+      .dropzone {
+        border: 2px dashed #3498db;
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        margin-bottom: 20px;
+        background-color: #f8fafc;
+        transition: background-color 0.3s;
+      }
+      .dropzone:hover {
+        background-color: #eef2f7;
+      }
+      .dropzone p {
+        margin: 0;
+        color: #7f8c8d;
+      }
+      .dropzone.highlight {
+        border-color: #2ecc71;
+        background-color: rgba(46, 204, 113, 0.1);
+      }
+      button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+      }
+      .file-info {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #7f8c8d;
+      }
+      .result-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+      .result-item {
+        margin-bottom: 15px;
+      }
+      .result-item h3 {
+        margin-bottom: 5px;
+        color: #34495e;
+      }
+      .category-bar {
+        display: flex;
+        align-items: center;
+        margin-top: 5px;
+      }
+      .category-name {
+        flex: 1;
+      }
+      .category-amount {
+        width: 100px;
+        text-align: right;
+        font-weight: bold;
+      }
+      .progress-bar {
+        height: 10px;
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 5px;
+      }
+      .progress-fill {
+        height: 100%;
+        background-color: #3498db;
+      }
+      .trait-score {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .trait-name {
+        width: 150px;
+      }
+      .trait-value {
+        width: 50px;
+        text-align: right;
+        font-weight: bold;
+      }
+      .trait-bar {
+        flex: 1;
+        height: 10px;
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 0 10px;
+      }
+      .trait-fill {
+        height: 100%;
+        background-color: #2ecc71;
+      }
+      .recommendation {
+        background-color: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        border-left: 4px solid #3498db;
+      }
+      .xp-earned {
+        font-size: 24px;
+        font-weight: bold;
+        color: #f39c12;
+        text-align: center;
+        margin: 20px 0;
+        padding: 10px;
+        background-color: #fff8e1;
+        border-radius: 4px;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #7f8c8d;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #3498db;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .error {
+        color: #e74c3c;
+        padding: 10px;
+        background-color: #fdeaea;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .api-key-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+      }
+      .api-key-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin-top: 5px;
+        font-family: monospace;
+      }
+      .page-info {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #7f8c8d;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PDF Statement Analysis Tester</h1>
+    <p>
+      This tool allows you to test the PDF parsing and LLM analysis
+      functionality without needing to run the full application.
+    </p>
+
+    <div class="api-key-section">
+      <h3>OpenAI API Key</h3>
+      <p>
+        Enter your OpenAI API key to analyze the PDF content. Your key is only
+        used in this browser and is not sent to any server.
+      </p>
+      <input
+        type="password"
+        id="apiKeyInput"
+        class="api-key-input"
+        placeholder="sk-..."
+      />
+      <div style="margin-top: 15px">
+        <label for="modelSelect" style="display: block; margin-bottom: 5px"
+          >Select OpenAI Model:</label
+        >
+        <select
+          id="modelSelect"
+          style="
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+          "
+        >
+          <option value="gpt-4o">GPT-4o (Recommended)</option>
+          <option value="gpt-3.5-turbo">
+            GPT-3.5 Turbo (Faster, less accurate)
+          </option>
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="gpt-4">GPT-4</option>
+        </select>
+      </div>
+      <p class="file-info">
+        Note: For security, you should never share your API key or embed it in
+        public code.
+      </p>
+    </div>
+
+    <div class="container">
+      <div class="panel">
+        <h2>Upload PDF Statement</h2>
+        <div id="dropzone" class="dropzone">
+          <p>Drag & drop your PDF statement here, or click to select a file</p>
+          <input
+            type="file"
+            id="fileInput"
+            accept="application/pdf"
+            style="display: none"
+          />
+        </div>
+        <div id="fileInfo" class="file-info"></div>
+        <div id="pageInfo" class="page-info"></div>
+        <button id="analyzeBtn" disabled>Analyze Statement</button>
+        <div id="error" class="error" style="display: none"></div>
+
+        <div id="loading" class="loading" style="display: none">
+          <div class="spinner"></div>
+          <p>Analyzing your statement...</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Extracted Text</h2>
+        <textarea
+          id="extractedText"
+          readonly
+          placeholder="The extracted text from your PDF will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div id="results" style="display: none">
+      <div class="panel">
+        <h2>Analysis Results</h2>
+
+        <div class="result-section">
+          <div class="result-item">
+            <h3>Financial Summary</h3>
+            <div style="display: flex; gap: 20px">
+              <div
+                style="
+                  flex: 1;
+                  background-color: #e8f7f2;
+                  padding: 15px;
+                  border-radius: 8px;
+                "
+              >
+                <div style="font-size: 14px; color: #16a085">Total Income</div>
+                <div
+                  id="totalIncome"
+                  style="font-size: 24px; font-weight: bold"
+                >
+                  $0.00
+                </div>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  background-color: #fef5f5;
+                  padding: 15px;
+                  border-radius: 8px;
+                "
+              >
+                <div style="font-size: 14px; color: #c0392b">
+                  Total Expenses
+                </div>
+                <div
+                  id="totalExpenses"
+                  style="font-size: 24px; font-weight: bold"
+                >
+                  $0.00
+                </div>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  background-color: #eef6fc;
+                  padding: 15px;
+                  border-radius: 8px;
+                "
+              >
+                <div style="font-size: 14px; color: #2980b9">Savings Rate</div>
+                <div
+                  id="savingsRate"
+                  style="font-size: 24px; font-weight: bold"
+                >
+                  0%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-item">
+            <h3>Top Spending Categories</h3>
+            <div id="categories"></div>
+          </div>
+
+          <div class="result-item">
+            <h3>Recommendations</h3>
+            <div id="recommendations"></div>
+          </div>
+
+          <div class="result-item">
+            <h3>Financial Trait Scores</h3>
+            <div id="traits"></div>
+          </div>
+
+          <div class="xp-earned">
+            <div style="font-size: 16px; color: #7f8c8d">XP Earned</div>
+            <div id="xpEarned">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize PDF.js worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+
+      // DOM elements
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const pageInfo = document.getElementById("pageInfo");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const extractedText = document.getElementById("extractedText");
+      const results = document.getElementById("results");
+      const loading = document.getElementById("loading");
+      const errorElement = document.getElementById("error");
+      const apiKeyInput = document.getElementById("apiKeyInput");
+      const modelSelect = document.getElementById("modelSelect");
+
+      // Results elements
+      const totalIncomeElement = document.getElementById("totalIncome");
+      const totalExpensesElement = document.getElementById("totalExpenses");
+      const savingsRateElement = document.getElementById("savingsRate");
+      const categoriesElement = document.getElementById("categories");
+      const recommendationsElement = document.getElementById("recommendations");
+      const traitsElement = document.getElementById("traits");
+      const xpEarnedElement = document.getElementById("xpEarned");
+
+      // Selected file
+      let selectedFile = null;
+
+      // Check for API key in localStorage
+      if (localStorage.getItem("openai_api_key")) {
+        apiKeyInput.value = localStorage.getItem("openai_api_key");
+      }
+
+      // Check for saved model preference
+      if (localStorage.getItem("openai_model")) {
+        modelSelect.value = localStorage.getItem("openai_model");
+      }
+
+      // Save API key to localStorage when changed
+      apiKeyInput.addEventListener("change", () => {
+        if (apiKeyInput.value) {
+          localStorage.setItem("openai_api_key", apiKeyInput.value);
+        } else {
+          localStorage.removeItem("openai_api_key");
+        }
+      });
+
+      // Save model selection to localStorage
+      modelSelect.addEventListener("change", () => {
+        localStorage.setItem("openai_model", modelSelect.value);
+      });
+
+      // Event listeners for drag and drop
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        dropzone.classList.add("highlight");
+      }
+
+      function unhighlight() {
+        dropzone.classList.remove("highlight");
+      }
+
+      // Handle file drop
+      dropzone.addEventListener("drop", handleDrop, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+          handleFiles(files);
+        }
+      }
+
+      // Handle file selection via click
+      dropzone.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+          handleFiles(fileInput.files);
+        }
+      });
+
+      function handleFiles(files) {
+        if (files[0].type !== "application/pdf") {
+          showError("Please select a PDF file.");
+          return;
+        }
+
+        selectedFile = files[0];
+        fileInfo.textContent = `Selected file: ${
+          selectedFile.name
+        } (${formatFileSize(selectedFile.size)})`;
+
+        // Get PDF info
+        getPdfInfo(selectedFile);
+
+        analyzeBtn.disabled = false;
+        hideError();
+      }
+
+      async function getPdfInfo(file) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          pageInfo.textContent = `PDF contains ${pdf.numPages} pages`;
+        } catch (error) {
+          console.error("Error getting PDF info:", error);
+          pageInfo.textContent = "Error reading PDF information";
+        }
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + " bytes";
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        else return (bytes / 1048576).toFixed(1) + " MB";
+      }
+
+      // Analyze button click handler
+      analyzeBtn.addEventListener("click", async () => {
+        if (!selectedFile) {
+          showError("Please select a PDF file first.");
+          return;
+        }
+
+        if (!apiKeyInput.value) {
+          showError("Please enter your OpenAI API key.");
+          return;
+        }
+
+        showLoading();
+        hideError();
+
+        try {
+          // First, extract text from the PDF
+          const text = await extractTextFromPDF(selectedFile);
+          extractedText.value = text;
+
+          // Then, analyze the text
+          const analysis = await analyzeText(text, apiKeyInput.value);
+
+          // Display the results
+          displayResults(analysis);
+
+          hideLoading();
+          results.style.display = "block";
+        } catch (error) {
+          console.error("Error:", error);
+          hideLoading();
+          showError("An error occurred: " + error.message);
+        }
+      });
+
+      // Real function to extract text from PDF using PDF.js
+      async function extractTextFromPDF(file) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+          let fullText = "";
+
+          // Get total number of pages
+          const numPages = pdf.numPages;
+
+          // Extract text from each page
+          for (let i = 1; i <= numPages; i++) {
+            try {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+
+              // Join all the text items from the page
+              const pageText = textContent.items
+                .map((item) => item.str)
+                .join(" ");
+
+              fullText += `--- PAGE ${i} ---\n${pageText}\n\n`;
+
+              // Update progress in the UI
+              if (i % 5 === 0 || i === numPages) {
+                extractedText.value = `Extracting text: ${i}/${numPages} pages processed...\n\n${fullText}`;
+              }
+            } catch (pageError) {
+              console.error(`Error extracting text from page ${i}:`, pageError);
+              fullText += `--- PAGE ${i} --- [Error extracting text from this page]\n\n`;
+            }
+          }
+
+          // Check if text is too large and truncate if necessary
+          const maxChars = 100000; // Reasonable limit to avoid token issues
+          if (fullText.length > maxChars) {
+            const truncatedText = fullText.substring(0, maxChars);
+            extractedText.value =
+              truncatedText +
+              "\n\n[Text truncated due to size limitations. Only the first " +
+              maxChars +
+              " characters will be analyzed.]";
+            return truncatedText;
+          }
+
+          return fullText;
+        } catch (error) {
+          console.error("Error extracting text from PDF:", error);
+          throw new Error("Failed to extract text from PDF: " + error.message);
+        }
+      }
+
+      // Function to estimate token count (rough approximation)
+      function estimateTokenCount(text) {
+        // A very rough approximation: ~4 characters per token for English text
+        return Math.ceil(text.length / 4);
+      }
+
+      // Real function to analyze text using OpenAI API
+      async function analyzeText(text, apiKey) {
+        try {
+          // Estimate token count
+          const estimatedTokens = estimateTokenCount(text);
+          const tokenLimit = 100000; // Conservative limit for GPT-4o
+
+          // Show a message about API usage
+          const apiMessage = document.createElement("div");
+          apiMessage.className = "recommendation";
+          apiMessage.style.backgroundColor = "#fff8e1";
+          apiMessage.style.borderLeft = "4px solid #f39c12";
+
+          if (estimatedTokens > tokenLimit) {
+            apiMessage.innerHTML = `Warning: The extracted text is approximately ${estimatedTokens.toLocaleString()} tokens, which exceeds the model's limit. The text has been truncated.`;
+          } else {
+            apiMessage.innerHTML = `Sending request to OpenAI API using <strong>${
+              modelSelect.value
+            }</strong> model (est. ${estimatedTokens.toLocaleString()} tokens). This may take a moment...`;
+          }
+
+          recommendationsElement.innerHTML = "";
+          recommendationsElement.appendChild(apiMessage);
+
+          // Truncate text if it's too long
+          let processedText = text;
+          if (estimatedTokens > tokenLimit) {
+            // Truncate to approximately 75% of the token limit to leave room for the response
+            const safeLimit = Math.floor(tokenLimit * 0.75);
+            const charLimit = safeLimit * 4; // Convert back to characters
+            processedText = text.substring(0, charLimit);
+            console.log(
+              `Text truncated from ${estimatedTokens} to ~${safeLimit} tokens`
+            );
+          }
+
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model: modelSelect.value,
+                messages: [
+                  {
+                    role: "system",
+                    content: `You are a financial analysis expert. Analyze the provided bank statement text and extract the following information:
+                  
+                  1. Total income (sum of all deposits/incoming transactions)
+                  2. Total expenses (sum of all withdrawals/outgoing transactions)
+                  3. Savings rate (percentage of income saved)
+                  4. Top spending categories with amounts (e.g., Housing, Food, Transportation, etc.)
+                  5. Financial recommendations based on spending patterns
+                  6. Trait scores (0-100) for the following financial traits:
+                     - Saver: How well the person saves money
+                     - Investor: How well the person invests money
+                     - Planner: How well the person plans their finances
+                     - Knowledgeable: How financially knowledgeable the person appears to be
+                  7. XP earned (between 100-1000) based on overall financial health
+                  
+                  Return the results in a JSON format with the following structure:
+                  {
+                    "totalIncome": float,
+                    "totalExpenses": float,
+                    "savingsRate": float,
+                    "topCategories": [
+                      {"name": string, "amount": float},
+                      ...
+                    ],
+                    "recommendations": [string, string, ...],
+                    "traits": {
+                      "saver": int,
+                      "investor": int,
+                      "planner": int,
+                      "knowledgeable": int
+                    },
+                    "xpEarned": int
+                  }`,
+                  },
+                  {
+                    role: "user",
+                    content: `Here is the bank statement text to analyze:\n\n${processedText}`,
+                  },
+                ],
+                temperature: 0.2,
+                response_format: { type: "json_object" },
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            const errorMessage =
+              errorData.error?.message || "Error calling OpenAI API";
+
+            // Handle quota exceeded error specifically
+            if (
+              errorMessage.includes("quota") ||
+              errorMessage.includes("billing")
+            ) {
+              throw new Error(`OpenAI API quota exceeded. Please check your billing details or try these options:
+              1. Use a different OpenAI API key
+              2. Upgrade your OpenAI account
+              3. Try a smaller PDF file
+              4. Wait until your quota resets`);
+            }
+
+            throw new Error(errorMessage);
+          }
+
+          const data = await response.json();
+          return JSON.parse(data.choices[0].message.content);
+        } catch (error) {
+          console.error("Error analyzing text with OpenAI:", error);
+
+          // If it's a quota error, provide more helpful information
+          if (
+            error.message.includes("quota") ||
+            error.message.includes("billing")
+          ) {
+            // Create a fallback mock response for demonstration purposes
+            const mockResponse = {
+              totalIncome: 0,
+              totalExpenses: 0,
+              savingsRate: 0,
+              topCategories: [],
+              recommendations: [
+                "API quota exceeded. This is a mock response for demonstration.",
+                "To fix the quota issue, please check your OpenAI billing details.",
+                "You can also try using a different API key or waiting until your quota resets.",
+              ],
+              traits: {
+                saver: 50,
+                investor: 50,
+                planner: 50,
+                knowledgeable: 50,
+              },
+              xpEarned: 100,
+            };
+
+            // Show error but return mock data so the UI still works
+            showError(
+              `OpenAI API quota exceeded. Using mock data for demonstration.`
+            );
+            return mockResponse;
+          }
+
+          throw new Error(`Failed to analyze text: ${error.message}`);
+        }
+      }
+
+      // Display the analysis results
+      function displayResults(analysis) {
+        // Financial summary
+        totalIncomeElement.textContent = `$${analysis.totalIncome.toFixed(2)}`;
+        totalExpensesElement.textContent = `$${analysis.totalExpenses.toFixed(
+          2
+        )}`;
+        savingsRateElement.textContent = `${analysis.savingsRate.toFixed(1)}%`;
+
+        // Top spending categories
+        categoriesElement.innerHTML = "";
+        const totalExpenses = analysis.totalExpenses;
+
+        analysis.topCategories.forEach((category) => {
+          const percentage = (category.amount / totalExpenses) * 100;
+
+          const categoryDiv = document.createElement("div");
+          categoryDiv.className = "category-bar";
+          categoryDiv.innerHTML = `
+                    <div class="category-name">${category.name}</div>
+                    <div class="category-amount">$${category.amount.toFixed(
+                      2
+                    )}</div>
+                `;
+
+          const progressBar = document.createElement("div");
+          progressBar.className = "progress-bar";
+          progressBar.innerHTML = `<div class="progress-fill" style="width: ${percentage}%"></div>`;
+
+          categoriesElement.appendChild(categoryDiv);
+          categoriesElement.appendChild(progressBar);
+        });
+
+        // Recommendations
+        recommendationsElement.innerHTML = "";
+        analysis.recommendations.forEach((recommendation) => {
+          const recDiv = document.createElement("div");
+          recDiv.className = "recommendation";
+          recDiv.textContent = recommendation;
+          recommendationsElement.appendChild(recDiv);
+        });
+
+        // Traits
+        traitsElement.innerHTML = "";
+        Object.entries(analysis.traits).forEach(([trait, score]) => {
+          const traitDiv = document.createElement("div");
+          traitDiv.className = "trait-score";
+
+          const capitalizedTrait =
+            trait.charAt(0).toUpperCase() + trait.slice(1);
+
+          traitDiv.innerHTML = `
+                    <div class="trait-name">${capitalizedTrait}</div>
+                    <div class="trait-bar">
+                        <div class="trait-fill" style="width: ${score}%"></div>
+                    </div>
+                    <div class="trait-value">${score}/100</div>
+                `;
+
+          traitsElement.appendChild(traitDiv);
+        });
+
+        // XP earned
+        xpEarnedElement.textContent = analysis.xpEarned;
+      }
+
+      // Helper functions
+      function showLoading() {
+        loading.style.display = "block";
+        analyzeBtn.disabled = true;
+      }
+
+      function hideLoading() {
+        loading.style.display = "none";
+        analyzeBtn.disabled = false;
+      }
+
+      function showError(message) {
+        errorElement.textContent = message;
+        errorElement.style.display = "block";
+      }
+
+      function hideError() {
+        errorElement.style.display = "none";
+      }
+    </script>
+  </body>
+</html>

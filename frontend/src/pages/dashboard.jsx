@@ -72,25 +72,37 @@ export default function Dashboard() {
             id: "saver",
             name: "Saver",
             icon: "💰",
-            color: "green"
+            color: "green",
+            bgColor: "rgba(22, 163, 74, 0.2)",
+            textColor: "#22c55e",
+            barColor: "#22c55e"
         },
         {
             id: "investor",
             name: "Investor",
             icon: "📊",
-            color: "purple"
+            color: "purple",
+            bgColor: "rgba(147, 51, 234, 0.2)",
+            textColor: "#a855f7",
+            barColor: "#a855f7"
         },
         {
             id: "planner",
             name: "Planner",
             icon: "📝",
-            color: "yellow"
+            color: "yellow",
+            bgColor: "rgba(234, 179, 8, 0.2)",
+            textColor: "#eab308",
+            barColor: "#eab308"
         },
         {
             id: "knowledgeable",
             name: "Financial Scholar",
             icon: "🎓",
-            color: "blue"
+            color: "blue",
+            bgColor: "rgba(59, 130, 246, 0.2)",
+            textColor: "#3b82f6",
+            barColor: "#3b82f6"
         }
     ];
 
@@ -192,13 +204,24 @@ export default function Dashboard() {
                                         
                                         return (
                                             <div key={trait.id} className="flex items-center gap-3">
-                                                <div className={`text-lg p-2 rounded-full bg-${trait.color}-900/30 text-${trait.color}-400 flex-shrink-0`}>
+                                                <div 
+                                                    className="text-lg p-2 rounded-full flex-shrink-0"
+                                                    style={{ 
+                                                        backgroundColor: trait.bgColor,
+                                                        color: trait.textColor
+                                                    }}
+                                                >
                                                     {trait.icon}
                                                 </div>
 
                                                 <div className="flex-grow">
                                                     <div className="flex justify-between items-center mb-1.5">
-                                                        <span className={`font-semibold text-${trait.color}-400`}>{trait.name}</span>
+                                                        <span 
+                                                            className="font-semibold"
+                                                            style={{ color: trait.textColor }}
+                                                        >
+                                                            {trait.name}
+                                                        </span>
                                                         <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-300">
                                                             {traitValue}/100
                                                         </span>
@@ -206,8 +229,11 @@ export default function Dashboard() {
 
                                                     <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden relative">
                                                         <div
-                                                            className={`h-full bg-${trait.color}-500 rounded-full`}
-                                                            style={{ width: `${traitValue}%` }}
+                                                            className="h-full rounded-full"
+                                                            style={{ 
+                                                                width: `${traitValue}%`,
+                                                                backgroundColor: trait.barColor
+                                                            }}
                                                         ></div>
 
                                                         {/* Level markers */}

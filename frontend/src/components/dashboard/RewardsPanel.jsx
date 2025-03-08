@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { FiAward, FiCheck, FiClock, FiGift } from "react-icons/fi";
+import { useNotification } from "@/components/utils/Notification";
 
 export const RewardsPanel = () => {
+    const { showSuccess, showInfo, showError } = useNotification();
     const [dailyChallenges, setDailyChallenges] = useState([
         {
             id: 1,
@@ -35,21 +37,24 @@ export const RewardsPanel = () => {
             title: "Premium Template",
             description: "Unlock a premium budget template",
             cost: 100,
-            icon: "🏆"
+            icon: "🏆",
+            redeemed: false
         },
         {
             id: 2,
             title: "Advanced Analytics",
             description: "Unlock advanced spending analytics",
             cost: 250,
-            icon: "📊"
+            icon: "📊",
+            redeemed: false
         },
         {
             id: 3,
             title: "Custom Badge",
             description: "Create your own custom badge",
             cost: 500,
-            icon: "🎨"
+            icon: "🎨",
+            redeemed: false
         }
     ]);
 
@@ -66,6 +71,39 @@ export const RewardsPanel = () => {
             const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
             progress.xp = (progress.xp || 0) + challenge.xp;
             localStorage.setItem("savquest_progress", JSON.stringify(progress));
+            
+            // Show success notification
+            showSuccess(`Challenge completed! +${challenge.xp} XP earned`);
+        }
+    };
+
+    const redeemReward = (id) => {
+        const reward = rewards.find(r => r.id === id);
+        if (!reward) return;
+
+        const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
+        const userXp = progress.xp || 0;
+
+        if (userXp >= reward.cost && !reward.redeemed) {
+            // Deduct XP cost
+            progress.xp = userXp - reward.cost;
+            localStorage.setItem("savquest_progress", JSON.stringify(progress));
+            
+            // Mark reward as redeemed
+            setRewards(prev =>
+                prev.map(r =>
+                    r.id === id ? { ...r, redeemed: true } : r
+                )
+            );
+            
+            // Show success notification
+            showSuccess(`${reward.title} redeemed successfully!`);
+        } else if (reward.redeemed) {
+            // Show info notification if already redeemed
+            showInfo(`You've already redeemed ${reward.title}`);
+        } else {
+            // Show error notification if not enough XP
+            showError(`Not enough XP to redeem ${reward.title}`);
         }
     };
 
@@ -133,15 +171,18 @@ export const RewardsPanel = () => {
                 <div className="space-y-4">
                     {rewards.map(reward => {
                         const userXp = JSON.parse(localStorage.getItem("savquest_progress") || "{}")?.xp || 0;
-                        const canAfford = userXp >= reward.cost;
+                        const canAfford = userXp >= reward.cost && !reward.redeemed;
 
                         return (
                             <div
                                 key={reward.id}
-                                className={`p-4 border rounded-lg ${canAfford
-                                        ? "border-purple-500 bg-purple-900/10"
-                                        : "border-zinc-700 bg-zinc-800/50 opacity-70"
-                                    }`}
+                                className={`p-4 border rounded-lg ${
+                                    reward.redeemed 
+                                        ? "border-green-500 bg-green-900/10"
+                                        : canAfford
+                                            ? "border-purple-500 bg-purple-900/10"
+                                            : "border-zinc-700 bg-zinc-800/50 opacity-70"
+                                }`}
                             >
                                 <div className="flex items-start gap-3">
                                     <div className="text-2xl">{reward.icon}</div>
@@ -151,16 +192,25 @@ export const RewardsPanel = () => {
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <div className="text-sm font-medium text-yellow-400">{reward.cost} XP</div>
-                                        <button
-                                            disabled={!canAfford}
-                                            className={`mt-2 px-3 py-1 rounded text-xs flex items-center gap-1 ${canAfford
-                                                    ? "bg-purple-600 hover:bg-purple-700"
-                                                    : "bg-zinc-700 cursor-not-allowed"
+                                        {reward.redeemed ? (
+                                            <div className="mt-2 text-green-500 flex items-center gap-1">
+                                                <FiCheck />
+                                                <span className="text-xs">Redeemed</span>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => redeemReward(reward.id)}
+                                                disabled={!canAfford}
+                                                className={`mt-2 px-3 py-1 rounded text-xs flex items-center gap-1 ${
+                                                    canAfford
+                                                        ? "bg-purple-600 hover:bg-purple-700"
+                                                        : "bg-zinc-700 cursor-not-allowed"
                                                 }`}
-                                        >
-                                            <FiGift />
-                                            <span>Redeem</span>
-                                        </button>
+                                            >
+                                                <FiGift />
+                                                <span>Redeem</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>

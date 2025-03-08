@@ -1,6 +1,7 @@
 import { NavBar } from "@/components/navbar/NavBar";
 import { OnboardingProvider } from "../context/OnboardingContext";
 import { PageTransition } from "@/components/loading/PageTransition";
+import { NotificationProvider } from "@/components/utils/Notification";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
@@ -36,12 +37,14 @@ export default function App({ Component, pageProps }) {
 
   return (
     <OnboardingProvider>
-      <NavBar />
-      <AnimatePresence mode="wait">
-        <PageTransition isLoading={isLoading} key={router.pathname}>
-          <Component {...pageProps} />
-        </PageTransition>
-      </AnimatePresence>
+      <NotificationProvider>
+        <NavBar />
+        <AnimatePresence mode="wait">
+          <PageTransition isLoading={isLoading} key={router.pathname}>
+            <Component {...pageProps} />
+          </PageTransition>
+        </AnimatePresence>
+      </NotificationProvider>
     </OnboardingProvider>
   );
 }

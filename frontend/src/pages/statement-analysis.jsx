@@ -40,6 +40,9 @@ export default function StatementAnalysis() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [traitChanges, setTraitChanges] = useState(null);
+  const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
   useEffect(() => {
     // Check if user is authenticated
@@ -104,36 +107,88 @@ export default function StatementAnalysis() {
     setUploadError(null);
     
     try {
-      // Here you would implement the actual file upload to your backend
-      // For now, we'll simulate a successful upload after a delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate analysis results
-      setAnalysisResults({
-        totalIncome: 4250.75,
-        totalExpenses: 3125.50,
-        savingsRate: 26.5,
-        topCategories: [
-          { name: "Housing", amount: 1200.00 },
-          { name: "Food", amount: 650.25 },
-          { name: "Transportation", amount: 425.75 },
-          { name: "Entertainment", amount: 350.50 },
-          { name: "Utilities", amount: 275.00 }
-        ],
-        recommendations: [
-          "Consider reducing food expenses by meal planning",
-          "Your entertainment spending is higher than average",
-          "You're saving 26.5% of your income, which is excellent!"
-        ]
+      // Create a FormData object to send the files
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
       });
       
+      // Add the selected model to the request
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/statement-analysis/analyze?model=${selectedModel}`;
+      
+      // Send the files to the backend API
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Don't set Content-Type header as it will be set automatically with the boundary
+          'Authorization': `Bearer ${localStorage.getItem('savquest_token')}`
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to analyze statements');
+      }
+      
+      const result = await response.json();
+      
+      // Update the user's traits and XP in local storage
+      if (user && result.traits && result.xpEarned) {
+        const updatedUser = { ...user };
+        
+        // Calculate trait changes for animation
+        const traitChanges = {};
+        Object.keys(result.traits).forEach(trait => {
+          const currentValue = updatedUser.traits[trait] || 0;
+          const newValue = result.traits[trait];
+          traitChanges[trait] = {
+            from: currentValue,
+            to: newValue,
+            change: newValue - currentValue
+          };
+          
+          // Update user traits
+          updatedUser.traits[trait] = newValue;
+        });
+        
+        // Update XP
+        const currentXp = updatedUser.xp || 0;
+        updatedUser.xp = currentXp + result.xpEarned;
+        
+        // Save updated user to local storage
+        localStorage.setItem('savquest_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        setTraitChanges(traitChanges);
+        setXpEarned(result.xpEarned);
+      }
+      
+      setAnalysisResults(result);
       setUploadSuccess(true);
     } catch (error) {
       console.error("Upload error:", error);
-      setUploadError("Failed to upload files. Please try again.");
+      setUploadError(error.message || "Failed to upload files. Please try again.");
     } finally {
       setUploading(false);
     }
+  };
+
+  // Function to render trait change with animation
+  const renderTraitChange = (trait, label) => {
+    if (!traitChanges || !traitChanges[trait]) return null;
+    
+    const { from, to, change } = traitChanges[trait];
+    const isPositive = change > 0;
+    
+    return (
+      <div className="flex items-center mt-2">
+        <span className="text-zinc-400 mr-2">{label}:</span>
+        <span className="font-medium">{to}</span>
+        <span className={`ml-2 text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+          {isPositive ? '+' : ''}{change}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -171,6 +226,27 @@ export default function StatementAnalysis() {
             <p className="text-zinc-400 mb-6">
               Upload up to 12 PDF bank statements for analysis. We'll analyze your spending patterns and provide personalized insights.
             </p>
+            
+            {/* Add model selection dropdown */}
+            <div className="mb-6">
+              <label htmlFor="modelSelect" className="block text-sm font-medium text-zinc-400 mb-2">
+                Select Analysis Model
+              </label>
+              <select
+                id="modelSelect"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="bg-zinc-800 text-white border border-zinc-700 rounded-md px-3 py-2 w-full max-w-md"
+              >
+                <option value="gpt-4o">GPT-4o (Recommended)</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, less accurate)</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-4">GPT-4</option>
+              </select>
+              <p className="mt-1 text-sm text-zinc-500">
+                GPT-4o provides the most accurate analysis but may take longer to process.
+              </p>
+            </div>
             
             <div 
               {...getRootProps()} 
@@ -267,7 +343,7 @@ export default function StatementAnalysis() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div>
                   <h3 className="text-lg font-medium mb-4">Top Spending Categories</h3>
                   <div className="space-y-3">
@@ -302,6 +378,71 @@ export default function StatementAnalysis() {
                   </div>
                 </div>
               </div>
+              
+              {/* XP and Traits Section */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="bg-zinc-800 p-6 rounded-lg"
+              >
+                <h3 className="text-lg font-medium mb-4">Your Financial Profile</h3>
+                
+                {xpEarned > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="mb-6 p-3 bg-yellow-900/30 border border-yellow-800 rounded-md"
+                  >
+                    <p className="text-yellow-300 font-medium">
+                      <span className="text-xl">+{xpEarned} XP</span> earned from this analysis!
+                    </p>
+                  </motion.div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-zinc-300 mb-3">Trait Changes</h4>
+                    {renderTraitChange('saver', 'Saver')}
+                    {renderTraitChange('investor', 'Investor')}
+                    {renderTraitChange('planner', 'Planner')}
+                    {renderTraitChange('knowledgeable', 'Knowledgeable')}
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-zinc-300 mb-3">Financial Strengths</h4>
+                    <div className="space-y-2">
+                      {analysisResults.traits && Object.entries(analysisResults.traits)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 2)
+                        .map(([trait, value]) => (
+                          <div key={trait} className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                            <span className="capitalize">{trait}</span>
+                            <span className="ml-auto font-medium">{value}/100</span>
+                          </div>
+                        ))
+                      }
+                    </div>
+                    
+                    <h4 className="text-zinc-300 mt-4 mb-3">Areas to Improve</h4>
+                    <div className="space-y-2">
+                      {analysisResults.traits && Object.entries(analysisResults.traits)
+                        .sort(([, a], [, b]) => a - b)
+                        .slice(0, 2)
+                        .map(([trait, value]) => (
+                          <div key={trait} className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                            <span className="capitalize">{trait}</span>
+                            <span className="ml-auto font-medium">{value}/100</span>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </div>
