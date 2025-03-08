@@ -1,0 +1,19 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/bin/python3",
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  "python.analysis.autoImportCompletions": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--line-length",
+    "88"
+  ],
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  }
+} 
