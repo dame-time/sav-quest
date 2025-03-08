@@ -6,7 +6,7 @@ import { NavCTAs } from "./NavCTAs";
 import { useMotionValueEvent, useScroll, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FiChevronDown, FiLogOut, FiUser, FiHome } from "react-icons/fi";
+import { FiChevronDown, FiLogOut, FiUser, FiHome, FiAward } from "react-icons/fi";
 
 export const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -85,7 +85,8 @@ export const NavBar = () => {
             <Link href="/" className="text-2xl font-bold text-blue-500">
               SavQuest
             </Link>
-            {!isOnboarding && !isAuthPage && (
+            {/* Only show marketing links when not logged in and not on auth/onboarding pages */}
+            {!isLoggedIn && !isOnboarding && !isAuthPage && (
               <div className="hidden md:flex space-x-6">
                 <Link href="/#features" className="text-zinc-300 hover:text-white">
                   Features
@@ -134,6 +135,14 @@ export const NavBar = () => {
                         <FiUser />
                         Profile
                       </Link>
+                      <Link
+                        href="/leaderboards"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiAward />
+                        Leaderboards
+                      </Link>
                       <button
                         onClick={handleSignOut}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700 w-full text-left"
@@ -161,8 +170,8 @@ export const NavBar = () => {
           )}
         </div>
 
-        {/* Mobile navigation */}
-        {!isOnboarding && !isAuthPage && (
+        {/* Mobile navigation - only show for non-logged in users */}
+        {!isLoggedIn && !isOnboarding && !isAuthPage && (
           <div className="block pt-1.5 md:hidden">
             <div className="flex space-x-4">
               <Link href="/#features" className="text-zinc-300 hover:text-white">
