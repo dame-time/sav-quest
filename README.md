@@ -49,10 +49,57 @@ We leverage TrueLayer API to access:
 
 ## 🚀 Getting Started
 
+### Frontend Setup
+
 1. Clone the repository
 2. Install dependencies: `npm install`
 3. Run development server: `npm run dev`
 4. Connect your bank account to begin your financial journey
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   # On macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+
+   # On Windows
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Create a `.env` file:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Then edit the `.env` file to add your API keys and configuration.
+
+5. Run the FastAPI server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+6. Access the API documentation at:
+   - Swagger UI: http://127.0.0.1:8000/docs
+   - ReDoc: http://127.0.0.1:8000/redoc
+
+### Running the Full Stack
+
+1. Start the backend server in one terminal window (follow backend setup steps)
+2. Start the frontend server in another terminal window: `npm run dev`
+3. Access the application at http://localhost:3000
 
 ## 🔮 Future Plans
 
