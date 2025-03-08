@@ -6,6 +6,7 @@ import {
     FiPieChart, FiSend, FiRefreshCw, FiClock, FiCheckCircle, FiCreditCard, FiTarget
 } from "react-icons/fi";
 import { GradientGrid } from "@/components/utils/GradientGrid";
+import { PieChart } from "@/components/charts/PieChart";
 
 export default function FinancialCoachPage() {
     const router = useRouter();
@@ -22,6 +23,8 @@ export default function FinancialCoachPage() {
         "What are my spending patterns?",
         "How can I reduce my expenses?"
     ]);
+
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         // Check if user is authenticated
@@ -78,6 +81,14 @@ export default function FinancialCoachPage() {
         });
     }, [router]);
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     const handleSendMessage = async () => {
         if (!inputMessage.trim()) return;
 
@@ -95,25 +106,103 @@ export default function FinancialCoachPage() {
         setInputMessage("");
         setIsLoading(true);
 
-        // In a real implementation, this would be an API call to your AI service
-        // For now, we'll simulate a response with a timeout
-        setTimeout(() => {
-            const aiResponse = generateAIResponse(inputMessage, userFinancialData, userProgress);
-            const coachMessage = {
-                id: Date.now(),
+        try {
+            // Check if this is a transaction search query
+            const isTransactionQuery = /spend|cost|pay|expense|transaction|subscription/i.test(inputMessage);
+
+            if (isTransactionQuery) {
+                // Add a "searching" message
+                const searchingMessage = {
+                    id: Date.now() + 1,
+                    sender: "coach",
+                    content: "Searching your transactions...",
+                    type: "process_step",
+                    timestamp: new Date().toISOString()
+                };
+
+                setMessages([...updatedMessages, searchingMessage]);
+            }
+
+            // Call the API
+            const response = await fetch('/api/v1/coach/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ message: inputMessage })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get response from coach');
+            }
+
+            const data = await response.json();
+
+            // If this was a transaction search, add visualization
+            if (data.searchResults) {
+                // Add search results message
+                const resultsMessage = {
+                    id: Date.now() + 2,
+                    sender: "coach",
+                    content: `Found ${data.searchResults.transactions.length} transactions related to your query.`,
+                    type: "search_results",
+                    data: data.searchResults.summary,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Add visualization message
+                const visualizationMessage = {
+                    id: Date.now() + 3,
+                    sender: "coach",
+                    content: "Here's a breakdown of your spending:",
+                    type: "visualization",
+                    data: {
+                        type: "pie_chart",
+                        chartData: data.searchResults.summary.by_merchant
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                // Add these messages to the chat
+                setMessages(prev => [...prev.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage]);
+            }
+
+            // Add the AI response
+            const aiMessage = {
+                id: Date.now() + 4,
                 sender: "coach",
-                content: aiResponse,
+                content: data.response,
                 timestamp: new Date().toISOString()
             };
 
-            const newMessages = [...updatedMessages, coachMessage];
-            setMessages(newMessages);
-            localStorage.setItem("savquest_coach_messages", JSON.stringify(newMessages));
-            setIsLoading(false);
+            // Update messages and save to localStorage
+            const finalMessages = isTransactionQuery
+                ? [...updatedMessages.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage, aiMessage]
+                : [...updatedMessages, aiMessage];
 
-            // Update suggested questions based on the conversation
-            updateSuggestedQuestions(inputMessage, aiResponse);
-        }, 1500);
+            setMessages(finalMessages);
+            localStorage.setItem("savquest_coach_messages", JSON.stringify(finalMessages));
+
+            // Update suggested questions
+            setSuggestedQuestions(data.suggestedQuestions);
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+
+            // Add error message
+            const errorMessage = {
+                id: Date.now() + 1,
+                sender: "coach",
+                content: "I'm sorry, I'm having trouble responding right now. Please try again later.",
+                timestamp: new Date().toISOString()
+            };
+
+            setMessages([...updatedMessages, errorMessage]);
+            localStorage.setItem("savquest_coach_messages", JSON.stringify([...updatedMessages, errorMessage]));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSuggestedQuestion = (question) => {
@@ -180,6 +269,20 @@ export default function FinancialCoachPage() {
         setSuggestedQuestions(newQuestions);
     };
 
+    const handleClearChat = () => {
+        // Show confirmation dialog
+        if (window.confirm("Are you sure you want to clear your conversation history?")) {
+            // Clear messages from state and localStorage
+            setMessages([{
+                id: Date.now(),
+                sender: "coach",
+                content: "Hello! I'm your personal financial coach. I can help you understand your finances, set goals, and improve your financial habits. What would you like to know about today?",
+                timestamp: new Date().toISOString()
+            }]);
+            localStorage.setItem("savquest_coach_messages", JSON.stringify([]));
+        }
+    };
+
     if (!user || !userProgress || !userFinancialData) {
         return (
             <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
@@ -196,13 +299,13 @@ export default function FinancialCoachPage() {
             <Head>
                 <title>Financial Coach | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 pb-4 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        {/* Financial Overview Sidebar */}
-                        <div className="lg:w-1/3">
-                            <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-5 sticky top-24">
+                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 h-[calc(100vh-96px)]">
+                    <div className="flex flex-col lg:flex-row gap-4 h-full">
+                        {/* Financial Overview Sidebar - make it more compact */}
+                        <div className="lg:w-1/3 lg:max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+                            <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4">
                                 <h2 className="text-xl font-bold mb-4 flex items-center">
                                     <FiUser className="mr-2" /> Financial Profile
                                 </h2>
@@ -297,14 +400,22 @@ export default function FinancialCoachPage() {
                         </div>
 
                         {/* Chat Interface */}
-                        <div className="lg:w-2/3 flex flex-col">
-                            <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-5 flex-grow flex flex-col">
-                                <h2 className="text-xl font-bold mb-4 flex items-center">
-                                    <FiMessageSquare className="mr-2" /> Financial Coach
-                                </h2>
+                        <div className="lg:w-2/3 flex flex-col flex-grow">
+                            <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-5 flex-grow flex flex-col h-[calc(100vh-160px)]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold flex items-center">
+                                        <FiMessageSquare className="mr-2" /> Financial Coach
+                                    </h2>
+                                    <button
+                                        onClick={handleClearChat}
+                                        className="text-zinc-400 hover:text-zinc-200 text-sm flex items-center"
+                                    >
+                                        <FiRefreshCw className="mr-1" /> Clear Chat
+                                    </button>
+                                </div>
 
-                                {/* Chat Messages */}
-                                <div className="flex-grow overflow-y-auto mb-4 space-y-4">
+                                {/* Adjust the chat messages container to take available space */}
+                                <div className="flex-grow overflow-y-auto mb-3 space-y-4 pr-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
                                     {messages.map(message => (
                                         <div
                                             key={message.id}
@@ -313,12 +424,45 @@ export default function FinancialCoachPage() {
                                             <div
                                                 className={`max-w-[80%] rounded-lg p-4 ${message.sender === 'user'
                                                     ? 'bg-blue-600 text-white'
-                                                    : 'bg-zinc-800 border border-zinc-700'
+                                                    : message.type === 'process_step'
+                                                        ? 'bg-zinc-800/70 border border-zinc-700'
+                                                        : message.type === 'search_results' || message.type === 'visualization'
+                                                            ? 'bg-zinc-800/90 border border-zinc-600'
+                                                            : 'bg-zinc-800 border border-zinc-700'
                                                     }`}
                                             >
-                                                <div className="prose prose-invert max-w-none">
-                                                    {message.content}
-                                                </div>
+                                                {message.type === 'process_step' ? (
+                                                    <div className="flex items-center">
+                                                        <div className="mr-2 w-4 h-4 rounded-full border-2 border-t-transparent border-blue-400 animate-spin"></div>
+                                                        <div>{message.content}</div>
+                                                    </div>
+                                                ) : message.type === 'search_results' ? (
+                                                    <div>
+                                                        <div className="mb-2">{message.content}</div>
+                                                        <div className="bg-zinc-900/80 p-3 rounded-md text-sm">
+                                                            <div className="flex justify-between mb-1">
+                                                                <span>Total:</span>
+                                                                <span className="font-medium">${Math.abs(message.data.total_spent).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span>Period:</span>
+                                                                <span className="font-medium">{message.data.time_period}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : message.type === 'visualization' ? (
+                                                    <div>
+                                                        <div className="mb-2">{message.content}</div>
+                                                        <div className="bg-zinc-900/80 p-3 rounded-md">
+                                                            <PieChart data={message.data.chartData} />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="prose prose-invert max-w-none">
+                                                        {message.content}
+                                                    </div>
+                                                )}
+
                                                 <div className="text-xs text-right mt-2 opacity-70">
                                                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
@@ -326,7 +470,7 @@ export default function FinancialCoachPage() {
                                         </div>
                                     ))}
 
-                                    {isLoading && (
+                                    {isLoading && !messages.some(m => m.type === 'process_step') && (
                                         <div className="flex justify-start">
                                             <div className="max-w-[80%] rounded-lg p-4 bg-zinc-800 border border-zinc-700">
                                                 <div className="flex space-x-2">
@@ -337,22 +481,24 @@ export default function FinancialCoachPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    <div ref={messagesEndRef} />
                                 </div>
 
-                                {/* Suggested Questions */}
-                                <div className="mb-4 flex flex-wrap gap-2">
+                                {/* Make suggested questions more compact */}
+                                <div className="mb-3 flex flex-wrap gap-2">
                                     {suggestedQuestions.map((question, index) => (
                                         <button
                                             key={index}
                                             onClick={() => handleSuggestedQuestion(question)}
-                                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-full text-sm transition-colors"
+                                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-full text-sm transition-colors"
                                         >
                                             {question}
                                         </button>
                                     ))}
                                 </div>
 
-                                {/* Input Area */}
+                                {/* Input area with no bottom margin */}
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="text"
@@ -360,12 +506,12 @@ export default function FinancialCoachPage() {
                                         onChange={(e) => setInputMessage(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                                         placeholder="Ask your financial coach anything..."
-                                        className="flex-grow bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="flex-grow bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                     <button
                                         onClick={handleSendMessage}
                                         disabled={isLoading || !inputMessage.trim()}
-                                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white p-3 rounded-lg transition-colors"
+                                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
                                     >
                                         <FiSend />
                                     </button>
