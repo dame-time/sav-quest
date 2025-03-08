@@ -61,51 +61,72 @@ async def generate_ai_response(
     transaction_data: Optional[Dict[str, Any]] = None
 ) -> str:
     """
-    Generate a mock AI response (no OpenAI API call)
+    Generate an AI response using OpenAI
     """
-    try:
-        # Get user financial data
-        financial_data = get_mock_financial_data(user["id"])
-        
-        # Simple rule-based responses for the hackathon
-        if re.search(r'savings|save', message, re.IGNORECASE):
-            return f"Based on your current savings rate of {financial_data['savingsRate']}%, you're doing better than average! To improve further, consider setting up automatic transfers of $225 more each month to your savings account. This would increase your savings rate to 22.8%, putting you on track to build a stronger emergency fund."
-        
-        elif re.search(r'budget|spending', message, re.IGNORECASE):
-            return f"Looking at your spending patterns, your largest expense category is housing at ${financial_data['spendingCategories']['housing']} per month ({round(financial_data['spendingCategories']['housing']/financial_data['income']*100)}% of income). Financial experts typically recommend keeping housing costs under 30% of income. Your food spending is ${financial_data['spendingCategories']['food']}, which is about average. One area you might look at reducing is entertainment at ${financial_data['spendingCategories']['entertainment']} - perhaps try a 'no-spend weekend' challenge?"
-        
-        elif re.search(r'debt|loan', message, re.IGNORECASE):
-            return f"Your current debt-to-income ratio is {financial_data['debtToIncomeRatio'] * 100}%, which is in a healthy range (below 36%). You have ${financial_data['debt']} in total debt. If you allocated an extra $300 per month to debt repayment, you could potentially be debt-free in about 3.5 years, depending on interest rates."
-        
-        elif re.search(r'emergency fund|emergency savings', message, re.IGNORECASE):
-            return f"Financial experts typically recommend having 3-6 months of essential expenses saved in an emergency fund. Based on your monthly expenses of ${financial_data['expenses']}, you should aim for ${financial_data['expenses'] * 3} to ${financial_data['expenses'] * 6} in your emergency fund. At your current savings rate of {financial_data['savingsRate']}%, it would take approximately {round((financial_data['expenses'] * 3) / financial_data['savings'])} months to build a 3-month emergency fund."
-        
-        elif re.search(r'invest|investment', message, re.IGNORECASE):
-            return f"Before focusing heavily on investments, it's important to ensure you have an emergency fund and manageable debt. With your savings rate of {financial_data['savingsRate']}%, you're in a good position to start investing once you have 3-6 months of expenses saved. Consider starting with low-cost index funds through a retirement account like a 401(k) or IRA to take advantage of tax benefits."
-        
-        elif re.search(r'retirement|retire', message, re.IGNORECASE):
-            return f"Based on your current income of ${financial_data['income']} per month (${financial_data['income']*12} annually), you should aim to save about 15% of your income for retirement. Currently, your savings rate is {financial_data['savingsRate']}%, which is a good start. If you maintain this rate and invest wisely, you could potentially build a retirement nest egg of over $1 million in 30 years, depending on market performance and consistency."
-        
-        elif transaction_data:
-            merchants = list(transaction_data['summary']['by_merchant'].keys())
-            merchant_str = ", ".join(merchants[:3]) if len(merchants) > 0 else "these services"
-            return f"I've analyzed your spending on {merchant_str} over the period from {transaction_data['summary']['time_period']}. You spent a total of ${transaction_data['summary']['total_spent']} on these services. This represents about {round(transaction_data['summary']['total_spent'] / (financial_data['income'] * 3) * 100)}% of your income during this period. Consider reviewing these subscriptions to see if you're getting value from all of them."
-        
-        elif re.search(r'goal|target', message, re.IGNORECASE):
-            return f"Setting clear financial goals is important! Based on your profile, here are some suggested goals:\n\n1. Build an emergency fund of ${financial_data['expenses'] * 3} (3 months of expenses)\n2. Increase your savings rate from {financial_data['savingsRate']}% to 25%\n3. Reduce your debt-to-income ratio from {financial_data['debtToIncomeRatio'] * 100}% to under 20%\n\nWhat specific goal would you like to focus on first?"
-        
-        elif re.search(r'credit score|credit', message, re.IGNORECASE):
-            return "Your credit score is influenced by payment history (35%), credit utilization (30%), length of credit history (15%), new credit (10%), and credit mix (10%). To improve your score: pay bills on time, keep credit card balances low (under 30% of limits), avoid opening too many new accounts, and maintain a mix of credit types. Checking your credit report regularly for errors is also important."
-        
-        elif re.search(r'tax|taxes', message, re.IGNORECASE):
-            return f"Based on your annual income of approximately ${financial_data['income']*12}, you might benefit from tax-advantaged accounts like a 401(k) or IRA. Contributing to these accounts can lower your taxable income. Additionally, tracking deductible expenses throughout the year can help maximize your tax refund. Consider consulting with a tax professional for personalized advice."
-        
-        else:
-            return f"Based on your financial profile, you're doing well with a savings rate of {financial_data['savingsRate']}%. Your monthly income is ${financial_data['income']} and expenses are ${financial_data['expenses']}, leaving you with ${financial_data['savings']} in monthly savings. To improve your financial health further, consider reviewing your spending in entertainment (${financial_data['spendingCategories']['entertainment']}) and other categories (${financial_data['spendingCategories']['other']}) to see if there are opportunities to save more."
+    # Get user financial data (mock data for now)
+    financial_data = get_mock_financial_data(user["id"])
     
-    except Exception as e:
-        print(f"Error in generate_ai_response: {str(e)}")
-        return "I apologize, but I encountered an error while processing your request. Please try again with a different question."
+    # Create the prompt
+    system_prompt = """
+    You are an expert financial coach named SavQuest Coach. Your role is to provide personalized financial advice 
+    based on the user's financial data and learning progress. Be supportive, educational, and actionable in your guidance.
+    
+    Guidelines:
+    - Provide specific, personalized advice based on the user's financial data
+    - Explain financial concepts in simple terms
+    - Suggest concrete next steps the user can take
+    - Reference relevant learning modules when appropriate
+    - Be encouraging and positive, focusing on progress
+    - Keep responses concise (max 3-4 paragraphs)
+    - Never recommend specific investment products or make promises about returns
+    - Always prioritize building emergency savings and debt reduction before investment advice
+    """
+    
+    # Add financial context to the prompt
+    financial_context = f"""
+    USER FINANCIAL PROFILE:
+    - Monthly Income: ${financial_data['income']}
+    - Monthly Expenses: ${financial_data['expenses']}
+    - Monthly Savings: ${financial_data['savings']}
+    - Savings Rate: {financial_data['savingsRate']}%
+    - Debt-to-Income Ratio: {financial_data['debtToIncomeRatio'] * 100}%
+    - Total Debt: ${financial_data['debt']}
+    
+    SPENDING BREAKDOWN:
+    - Housing: ${financial_data['spendingCategories']['housing']} ({round(financial_data['spendingCategories']['housing']/financial_data['income']*100)}% of income)
+    - Food: ${financial_data['spendingCategories']['food']} ({round(financial_data['spendingCategories']['food']/financial_data['income']*100)}% of income)
+    - Transportation: ${financial_data['spendingCategories']['transportation']} ({round(financial_data['spendingCategories']['transportation']/financial_data['income']*100)}% of income)
+    - Entertainment: ${financial_data['spendingCategories']['entertainment']} ({round(financial_data['spendingCategories']['entertainment']/financial_data['income']*100)}% of income)
+    - Utilities: ${financial_data['spendingCategories']['utilities']} ({round(financial_data['spendingCategories']['utilities']/financial_data['income']*100)}% of income)
+    - Other: ${financial_data['spendingCategories']['other']} ({round(financial_data['spendingCategories']['other']/financial_data['income']*100)}% of income)
+    """
+    
+    # Add transaction data if available
+    transaction_context = ""
+    if transaction_data:
+        transaction_context = f"""
+        TRANSACTION SEARCH RESULTS:
+        - Query: "{message}"
+        - Time Period: {transaction_data['summary']['time_period']}
+        - Total Spent: ${transaction_data['summary']['total_spent']}
+        - Breakdown by Merchant: {json.dumps(transaction_data['summary']['by_merchant'])}
+        """
+    
+    # Combine all context
+    full_prompt = f"{system_prompt}\n\n{financial_context}\n\n{transaction_context}\n\nUser: {message}\nSavQuest Coach:"
+    
+    # Call OpenAI API
+    response = await openai.ChatCompletion.acreate(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"{financial_context}\n\n{transaction_context}\n\nUser: {message}"}
+        ],
+        max_tokens=500,
+        temperature=0.7
+    )
+    
+    return response.choices[0].message.content
 
 def search_transactions(query: str, user_id: int) -> Dict[str, Any]:
     """
