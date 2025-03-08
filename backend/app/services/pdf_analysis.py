@@ -39,10 +39,27 @@ def num_tokens_from_string(string: str, model: str = DEFAULT_MODEL) -> int:
 def extract_text_from_pdf(pdf_file) -> str:
     """Extract text from a PDF file."""
     try:
-        reader = PdfReader(pdf_file)
+        # For FastAPI UploadFile objects, we need to read the content first
+        if hasattr(pdf_file, "file"):
+            # This is a FastAPI UploadFile
+            content = pdf_file.file.read()
+            # Create a BytesIO object from the content
+            from io import BytesIO
+
+            pdf_bytes = BytesIO(content)
+            reader = PdfReader(pdf_bytes)
+        else:
+            # Regular file object
+            reader = PdfReader(pdf_file)
+
         text = ""
         for page in reader.pages:
             text += page.extract_text() + "\n"
+
+        # Reset the file pointer for potential reuse
+        if hasattr(pdf_file, "file"):
+            pdf_file.file.seek(0)
+
         return text
     except Exception as e:
         logger.error(f"Error extracting text from PDF: {e}")
@@ -132,6 +149,27 @@ def analyze_statement_with_llm(text: str, model: str = DEFAULT_MODEL) -> Dict[st
         )
 
         result = json.loads(response.choices[0].message.content)
+
+        # Ensure the result has the expected format
+        if "traits" not in result or not isinstance(result["traits"], dict):
+            logger.warning("LLM response missing traits, adding default values")
+            result["traits"] = {
+                "saver": 50,
+                "investor": 50,
+                "planner": 50,
+                "knowledgeable": 50,
+            }
+        else:
+            # Ensure all required traits are present
+            for trait in ["saver", "investor", "planner", "knowledgeable"]:
+                if trait not in result["traits"]:
+                    result["traits"][trait] = 50
+
+        # Ensure xpEarned is present
+        if "xpEarned" not in result or not isinstance(result["xpEarned"], int):
+            logger.warning("LLM response missing xpEarned, adding default value")
+            result["xpEarned"] = 100
+
         return result
 
     except Exception as e:

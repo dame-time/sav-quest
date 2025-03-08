@@ -115,6 +115,7 @@ export default function StatementAnalysis() {
       
       // Add the selected model to the request
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/statement-analysis/analyze?model=${selectedModel}`;
+      console.log("Sending request to:", apiUrl);
       
       // Send the files to the backend API
       const response = await fetch(apiUrl, {
@@ -132,14 +133,24 @@ export default function StatementAnalysis() {
       }
       
       const result = await response.json();
+      console.log("API Response:", result);
       
       // Update the user's traits and XP in local storage
       if (user && result.traits && result.xpEarned) {
+        console.log("Updating user traits and XP");
         const updatedUser = { ...user };
+        console.log("Original user:", updatedUser);
+        
+        // Initialize traits object if it doesn't exist
+        if (!updatedUser.traits) {
+          console.log("Initializing traits object");
+          updatedUser.traits = {};
+        }
         
         // Calculate trait changes for animation
         const traitChanges = {};
         Object.keys(result.traits).forEach(trait => {
+          console.log(`Processing trait: ${trait}`);
           const currentValue = updatedUser.traits[trait] || 0;
           const newValue = result.traits[trait];
           traitChanges[trait] = {
@@ -151,16 +162,20 @@ export default function StatementAnalysis() {
           // Update user traits
           updatedUser.traits[trait] = newValue;
         });
+        console.log("Trait changes:", traitChanges);
         
         // Update XP
         const currentXp = updatedUser.xp || 0;
         updatedUser.xp = currentXp + result.xpEarned;
+        console.log("Updated user:", updatedUser);
         
         // Save updated user to local storage
         localStorage.setItem('savquest_user', JSON.stringify(updatedUser));
         setUser(updatedUser);
         setTraitChanges(traitChanges);
         setXpEarned(result.xpEarned);
+      } else {
+        console.warn("Missing traits or xpEarned in result:", result);
       }
       
       setAnalysisResults(result);
