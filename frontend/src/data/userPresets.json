@@ -1,0 +1,370 @@
+[
+  {
+    "id": "beginner",
+    "name": "Beginner Profile",
+    "traits": {
+      "saver": 35,
+      "investor": 20,
+      "planner": 40,
+      "knowledgeable": 25
+    },
+    "level": 1,
+    "xp": 250,
+    "nextLevelXp": 500,
+    "coins": 150,
+    "streakDays": 2,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-12-01T10:30:00Z"
+      }
+    ]
+  },
+  {
+    "id": "intermediate",
+    "name": "Intermediate Profile",
+    "traits": {
+      "saver": 65,
+      "investor": 45,
+      "planner": 70,
+      "knowledgeable": 50
+    },
+    "level": 4,
+    "xp": 1750,
+    "nextLevelXp": 2000,
+    "coins": 620,
+    "streakDays": 8,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-11-15T14:20:00Z"
+      },
+      {
+        "id": "budget_master",
+        "name": "Budget Master",
+        "description": "Created your first budget",
+        "icon": "📊",
+        "unlocked": true,
+        "date": "2023-11-20T09:45:00Z"
+      },
+      {
+        "id": "saving_streak",
+        "name": "Saving Streak",
+        "description": "Saved money for 7 days in a row",
+        "icon": "🔥",
+        "unlocked": true,
+        "date": "2023-12-05T18:30:00Z"
+      }
+    ]
+  },
+  {
+    "id": "advanced",
+    "name": "Advanced Profile",
+    "traits": {
+      "saver": 85,
+      "investor": 80,
+      "planner": 90,
+      "knowledgeable": 75
+    },
+    "level": 8,
+    "xp": 7500,
+    "nextLevelXp": 8000,
+    "coins": 1850,
+    "streakDays": 21,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-10-01T08:15:00Z"
+      },
+      {
+        "id": "budget_master",
+        "name": "Budget Master",
+        "description": "Created your first budget",
+        "icon": "📊",
+        "unlocked": true,
+        "date": "2023-10-10T11:30:00Z"
+      },
+      {
+        "id": "saving_streak",
+        "name": "Saving Streak",
+        "description": "Saved money for 7 days in a row",
+        "icon": "🔥",
+        "unlocked": true,
+        "date": "2023-10-20T16:45:00Z"
+      },
+      {
+        "id": "investment_guru",
+        "name": "Investment Guru",
+        "description": "Made your first investment",
+        "icon": "💰",
+        "unlocked": true,
+        "date": "2023-11-05T13:20:00Z"
+      },
+      {
+        "id": "knowledge_seeker",
+        "name": "Knowledge Seeker",
+        "description": "Completed 5 learning modules",
+        "icon": "📚",
+        "unlocked": true,
+        "date": "2023-11-25T10:10:00Z"
+      }
+    ]
+  },
+  {
+    "id": "saver_focused",
+    "name": "Super Saver Profile",
+    "traits": {
+      "saver": 95,
+      "investor": 40,
+      "planner": 75,
+      "knowledgeable": 60
+    },
+    "level": 6,
+    "xp": 4200,
+    "nextLevelXp": 5000,
+    "coins": 1250,
+    "streakDays": 14,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-10-15T09:30:00Z"
+      },
+      {
+        "id": "budget_master",
+        "name": "Budget Master",
+        "description": "Created your first budget",
+        "icon": "📊",
+        "unlocked": true,
+        "date": "2023-10-25T14:15:00Z"
+      },
+      {
+        "id": "saving_streak",
+        "name": "Saving Streak",
+        "description": "Saved money for 7 days in a row",
+        "icon": "🔥",
+        "unlocked": true,
+        "date": "2023-11-10T17:45:00Z"
+      },
+      {
+        "id": "saving_expert",
+        "name": "Saving Expert",
+        "description": "Reached 90% in saving trait",
+        "icon": "💎",
+        "unlocked": true,
+        "date": "2023-12-01T11:20:00Z"
+      }
+    ]
+  },
+  {
+    "id": "investor_focused",
+    "name": "Investor Profile",
+    "traits": {
+      "saver": 60,
+      "investor": 90,
+      "planner": 65,
+      "knowledgeable": 70
+    },
+    "level": 5,
+    "xp": 3800,
+    "nextLevelXp": 4000,
+    "coins": 980,
+    "streakDays": 11,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-10-20T10:45:00Z"
+      },
+      {
+        "id": "investment_guru",
+        "name": "Investment Guru",
+        "description": "Made your first investment",
+        "icon": "💰",
+        "unlocked": true,
+        "date": "2023-11-01T15:30:00Z"
+      },
+      {
+        "id": "stock_master",
+        "name": "Stock Master",
+        "description": "Created a diversified portfolio",
+        "icon": "📈",
+        "unlocked": true,
+        "date": "2023-11-15T09:20:00Z"
+      }
+    ]
+  },
+  {
+    "id": "planner_focused",
+    "name": "Planner Profile",
+    "traits": {
+      "saver": 70,
+      "investor": 55,
+      "planner": 95,
+      "knowledgeable": 65
+    },
+    "level": 7,
+    "xp": 5800,
+    "nextLevelXp": 6000,
+    "coins": 1450,
+    "streakDays": 18,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-09-25T11:15:00Z"
+      },
+      {
+        "id": "budget_master",
+        "name": "Budget Master",
+        "description": "Created your first budget",
+        "icon": "📊",
+        "unlocked": true,
+        "date": "2023-10-05T16:30:00Z"
+      },
+      {
+        "id": "planning_expert",
+        "name": "Planning Expert",
+        "description": "Created a 5-year financial plan",
+        "icon": "📅",
+        "unlocked": true,
+        "date": "2023-10-20T14:45:00Z"
+      },
+      {
+        "id": "goal_setter",
+        "name": "Goal Setter",
+        "description": "Set and achieved 3 financial goals",
+        "icon": "🎯",
+        "unlocked": true,
+        "date": "2023-11-10T09:30:00Z"
+      }
+    ]
+  },
+  {
+    "id": "knowledge_focused",
+    "name": "Knowledge Seeker Profile",
+    "traits": {
+      "saver": 55,
+      "investor": 65,
+      "planner": 60,
+      "knowledgeable": 95
+    },
+    "level": 6,
+    "xp": 4500,
+    "nextLevelXp": 5000,
+    "coins": 1100,
+    "streakDays": 13,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-10-10T13:20:00Z"
+      },
+      {
+        "id": "knowledge_seeker",
+        "name": "Knowledge Seeker",
+        "description": "Completed 5 learning modules",
+        "icon": "📚",
+        "unlocked": true,
+        "date": "2023-10-25T15:45:00Z"
+      },
+      {
+        "id": "quiz_master",
+        "name": "Quiz Master",
+        "description": "Scored 100% on 3 financial quizzes",
+        "icon": "🧠",
+        "unlocked": true,
+        "date": "2023-11-15T10:30:00Z"
+      }
+    ]
+  },
+  {
+    "id": "balanced",
+    "name": "Balanced Profile",
+    "traits": {
+      "saver": 75,
+      "investor": 70,
+      "planner": 75,
+      "knowledgeable": 70
+    },
+    "level": 9,
+    "xp": 8700,
+    "nextLevelXp": 9000,
+    "coins": 2200,
+    "streakDays": 25,
+    "badges": [
+      {
+        "id": "first_login",
+        "name": "First Steps",
+        "description": "Logged in for the first time",
+        "icon": "🏆",
+        "unlocked": true,
+        "date": "2023-09-15T08:30:00Z"
+      },
+      {
+        "id": "budget_master",
+        "name": "Budget Master",
+        "description": "Created your first budget",
+        "icon": "📊",
+        "unlocked": true,
+        "date": "2023-09-25T11:45:00Z"
+      },
+      {
+        "id": "saving_streak",
+        "name": "Saving Streak",
+        "description": "Saved money for 7 days in a row",
+        "icon": "🔥",
+        "unlocked": true,
+        "date": "2023-10-10T16:20:00Z"
+      },
+      {
+        "id": "investment_guru",
+        "name": "Investment Guru",
+        "description": "Made your first investment",
+        "icon": "💰",
+        "unlocked": true,
+        "date": "2023-10-25T14:15:00Z"
+      },
+      {
+        "id": "knowledge_seeker",
+        "name": "Knowledge Seeker",
+        "description": "Completed 5 learning modules",
+        "icon": "📚",
+        "unlocked": true,
+        "date": "2023-11-10T09:30:00Z"
+      },
+      {
+        "id": "balanced_master",
+        "name": "Balanced Master",
+        "description": "Achieved balanced growth across all traits",
+        "icon": "⚖️",
+        "unlocked": true,
+        "date": "2023-11-30T13:45:00Z"
+      }
+    ]
+  }
+] 

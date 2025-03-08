@@ -2,7 +2,8 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock } from "react-icons/fi";
+import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock, FiEdit, FiTarget, FiBook } from "react-icons/fi";
+import { GradientGrid } from "@/components/utils/GradientGrid";
 
 export default function Profile() {
     const router = useRouter();
@@ -43,7 +44,14 @@ export default function Profile() {
     const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
 
     if (!user) {
-        return <div className="min-h-screen bg-zinc-950 pt-20">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 flex items-center justify-center h-full">
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -51,8 +59,9 @@ export default function Profile() {
             <Head>
                 <title>Your Profile | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Profile Summary */}
                         <div className="lg:col-span-1">

@@ -2,6 +2,7 @@ import Head from "next/head";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { Barlow } from "next/font/google";
 import Link from "next/link";
+import { GradientGrid } from "@/components/utils/GradientGrid";
 
 const barlowFont = Barlow({
     subsets: ["latin"],
@@ -15,9 +16,8 @@ export default function SignUp() {
             <Head>
                 <title>Sign Up | SavQuest</title>
             </Head>
-            <div className={`min-h-screen bg-zinc-950 text-zinc-50 ${barlowFont.className}`}>
-                <div className="absolute inset-0 bg-grid-zinc-700/50 z-0" />
-                <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/0 to-zinc-950 z-0" />
+            <div className={`min-h-screen bg-zinc-950 text-zinc-50 ${barlowFont.className} relative overflow-hidden`}>
+                <GradientGrid />
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                     <div className="max-w-md mx-auto">

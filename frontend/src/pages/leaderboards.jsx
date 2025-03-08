@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { FiUsers, FiMapPin, FiAward, FiTrendingUp } from "react-icons/fi";
+import { GradientGrid } from "@/components/utils/GradientGrid";
 
 export default function Leaderboards() {
     const router = useRouter();
@@ -48,7 +49,14 @@ export default function Leaderboards() {
     }, [router]);
 
     if (!user) {
-        return <div className="min-h-screen bg-zinc-950 pt-20">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 flex items-center justify-center h-full">
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -56,8 +64,9 @@ export default function Leaderboards() {
             <Head>
                 <title>Leaderboards | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <h1 className="text-3xl font-bold mb-8">Leaderboards</h1>
 
                     {/* Tab Navigation */}

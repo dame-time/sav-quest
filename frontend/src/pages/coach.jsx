@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import {
     FiMessageSquare, FiUser, FiDollarSign, FiTrendingUp,
-    FiPieChart, FiSend, FiRefreshCw, FiClock, FiCheckCircle
+    FiPieChart, FiSend, FiRefreshCw, FiClock, FiCheckCircle, FiCreditCard, FiTarget
 } from "react-icons/fi";
+import { GradientGrid } from "@/components/utils/GradientGrid";
 
 export default function FinancialCoachPage() {
     const router = useRouter();
@@ -180,7 +181,14 @@ export default function FinancialCoachPage() {
     };
 
     if (!user || !userProgress || !userFinancialData) {
-        return <div className="min-h-screen bg-zinc-950 pt-20">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 flex items-center justify-center h-full">
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -188,8 +196,9 @@ export default function FinancialCoachPage() {
             <Head>
                 <title>Financial Coach | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col lg:flex-row gap-6">
                         {/* Financial Overview Sidebar */}
                         <div className="lg:w-1/3">

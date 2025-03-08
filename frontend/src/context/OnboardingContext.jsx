@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { triggerCompletionEffect } from "@/components/utils/StepCompletionEffect";
 
 const OnboardingContext = createContext(null);
 
@@ -12,6 +13,7 @@ export const OnboardingProvider = ({ children }) => {
         literacyLevel: 3,
         selectedTrait: null,
         completed: false,
+        lastCompletedStep: 0,
     });
 
     // Load from localStorage if available
@@ -31,8 +33,30 @@ export const OnboardingProvider = ({ children }) => {
     }, [onboardingState]);
 
     const nextStep = () => {
+        const currentStepCompleted = onboardingState.currentStep;
         const newStep = onboardingState.currentStep + 1;
-        setOnboardingState({ ...onboardingState, currentStep: newStep });
+        
+        // Only trigger completion animation if this is a new step completion
+        // and we're not at the final step (to prevent double animation)
+        if (currentStepCompleted > onboardingState.lastCompletedStep && 
+            newStep <= onboardingState.totalSteps) {
+            // Use a flag in localStorage to prevent double triggering
+            const hasShownConfetti = localStorage.getItem(`confetti_shown_step_${currentStepCompleted}`);
+            
+            if (!hasShownConfetti) {
+                setTimeout(() => {
+                    triggerCompletionEffect();
+                    // Mark this confetti as shown
+                    localStorage.setItem(`confetti_shown_step_${currentStepCompleted}`, 'true');
+                }, 300);
+            }
+        }
+        
+        setOnboardingState({ 
+            ...onboardingState, 
+            currentStep: newStep,
+            lastCompletedStep: Math.max(currentStepCompleted, onboardingState.lastCompletedStep)
+        });
 
         // Navigate to the appropriate page
         navigateToStep(newStep);

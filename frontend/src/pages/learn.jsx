@@ -9,6 +9,8 @@ import {
     BsCashCoin, BsPiggyBank, BsCalculator, BsJournalCheck,
     BsBank, BsGraphUp, BsShield
 } from "react-icons/bs";
+import Link from "next/link";
+import { GradientGrid } from "@/components/utils/GradientGrid";
 
 export default function LearnPage() {
     const router = useRouter();
@@ -177,7 +179,14 @@ export default function LearnPage() {
     };
 
     if (!user || !learningPath.length || !userProgress) {
-        return <div className="min-h-screen bg-zinc-950 pt-20">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 flex items-center justify-center h-full">
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -185,8 +194,9 @@ export default function LearnPage() {
             <Head>
                 <title>Learning Journey | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 pb-32">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 pb-32 relative overflow-hidden">
+                <GradientGrid />
+                <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <h1 className="text-3xl font-bold mb-2">Your Financial Learning Journey</h1>
                     <p className="text-zinc-400 mb-8">Personalized lessons to build your financial knowledge</p>
 

@@ -4,12 +4,27 @@ import { useRouter } from "next/router";
 import { SplashButton } from "@/components/buttons/SplashButton";
 import { Barlow } from "next/font/google";
 import Link from "next/link";
+import { FiZap } from "react-icons/fi";
+import { GradientGrid } from "@/components/utils/GradientGrid";
+import { getRandomUserPreset } from "@/utils/userPresets";
 
 const barlowFont = Barlow({
   subsets: ["latin"],
   style: ["italic", "normal"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
+
+// Function to generate a random username
+const generateRandomUsername = () => {
+  const adjectives = ['Happy', 'Clever', 'Brave', 'Wise', 'Smart', 'Bold', 'Calm', 'Eager', 'Fair', 'Kind'];
+  const nouns = ['Tiger', 'Eagle', 'Dolphin', 'Panda', 'Lion', 'Wolf', 'Bear', 'Hawk', 'Fox', 'Owl'];
+  const randomNum = Math.floor(Math.random() * 1000);
+  
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  
+  return `${randomAdjective}${randomNoun}${randomNum}`;
+};
 
 export default function SignIn() {
   const router = useRouter();
@@ -19,6 +34,13 @@ export default function SignIn() {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isQuickLoading, setIsQuickLoading] = useState(false);
+  const [randomPreset, setRandomPreset] = useState(() => getRandomUserPreset());
+
+  // Function to refresh the random preset
+  const refreshRandomPreset = () => {
+    setRandomPreset(getRandomUserPreset());
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +48,42 @@ export default function SignIn() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleQuickLogin = async () => {
+    setIsQuickLoading(true);
+    setError("");
+    
+    try {
+      // Generate random user data
+      const randomUsername = generateRandomUsername();
+      const randomEmail = `${randomUsername.toLowerCase()}@example.com`;
+      
+      // Use the current random preset
+      const preset = randomPreset;
+      
+      // Create a random user and store in localStorage
+      const userData = {
+        username: randomUsername,
+        email: randomEmail,
+        isAuthenticated: true,
+        // Add a reference to which preset was used
+        presetId: preset.id,
+        presetName: preset.name
+      };
+      
+      localStorage.setItem("savquest_user", JSON.stringify(userData));
+      
+      // Store the preset progress data
+      localStorage.setItem("savquest_progress", JSON.stringify(preset));
+      
+      // Redirect to dashboard
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Quick login error:", error);
+      setError("An error occurred with quick login. Please try again.");
+      setIsQuickLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -74,10 +132,9 @@ export default function SignIn() {
       <Head>
         <title>Sign In | SavQuest</title>
       </Head>
-      <div className={`min-h-screen bg-zinc-950 text-zinc-50 ${barlowFont.className}`}>
-        <div className="absolute inset-0 bg-grid-zinc-700/50 z-0" />
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/0 to-zinc-950 z-0" />
-
+      <div className={`min-h-screen bg-zinc-950 text-zinc-50 ${barlowFont.className} relative overflow-hidden`}>
+        <GradientGrid />
+        
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-10">
@@ -88,6 +145,45 @@ export default function SignIn() {
               <p className="text-zinc-400">
                 Sign in to continue your financial journey
               </p>
+            </div>
+
+            {/* Quick Login Button */}
+            <div className="mb-6">
+              <button
+                onClick={handleQuickLogin}
+                disabled={isQuickLoading}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-medium rounded-md transition-all duration-200"
+              >
+                <FiZap className="text-lg" />
+                {isQuickLoading ? "Logging in..." : "Quick Login"}
+              </button>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-zinc-500">
+                  Skip registration and login instantly
+                </p>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-zinc-400">Profile: </span>
+                  <span className="text-xs font-medium text-blue-400">{randomPreset.name}</span>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      refreshRandomPreset();
+                    }}
+                    className="ml-1 text-xs text-zinc-500 hover:text-zinc-300"
+                  >
+                    ↻
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-zinc-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-zinc-950 text-zinc-500">Or continue with</span>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
