@@ -9,6 +9,9 @@ import { Hero } from "@/components/hero/Hero";
 import { Logos } from "@/components/logos/Logos";
 import { Pricing } from "@/components/pricing/Pricing";
 import { Barlow } from "next/font/google";
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useOnboarding } from '@/context/OnboardingContext';
 
 const barlowFont = Barlow({
   subsets: ["latin"],
@@ -17,6 +20,16 @@ const barlowFont = Barlow({
 });
 
 export default function Home() {
+  const { completed } = useOnboarding();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If onboarding is not completed, redirect to onboarding
+    if (!completed) {
+      router.push('/onboarding');
+    }
+  }, [completed, router]);
+
   return (
     <main className={barlowFont.className}>
       <Hero />
