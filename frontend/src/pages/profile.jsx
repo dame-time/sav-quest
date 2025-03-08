@@ -112,8 +112,8 @@ export default function Profile() {
                                             <div
                                                 key={badge.id}
                                                 className={`p-4 border rounded-lg text-center ${badge.unlocked
-                                                        ? "border-blue-500 bg-blue-900/20"
-                                                        : "border-zinc-700 bg-zinc-800/50 opacity-60"
+                                                    ? "border-blue-500 bg-blue-900/20"
+                                                    : "border-zinc-700 bg-zinc-800/50 opacity-60"
                                                     }`}
                                             >
                                                 <div className="text-3xl mb-2">
@@ -144,8 +144,8 @@ export default function Profile() {
                                             <div
                                                 key={traitId}
                                                 className={`p-4 border rounded-lg ${isSelected
-                                                        ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/20`
-                                                        : "border-zinc-700"
+                                                    ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/20`
+                                                    : "border-zinc-700"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-4 mb-3">
@@ -188,8 +188,8 @@ export default function Profile() {
                                                                 <div
                                                                     key={index}
                                                                     className={`flex items-center gap-3 p-3 border rounded-lg ${isUnlocked
-                                                                            ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/10`
-                                                                            : "border-zinc-700 bg-zinc-800/50 opacity-60"
+                                                                        ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/10`
+                                                                        : "border-zinc-700 bg-zinc-800/50 opacity-60"
                                                                         }`}
                                                                 >
                                                                     <div className="text-xl">

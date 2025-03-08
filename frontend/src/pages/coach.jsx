@@ -303,8 +303,8 @@ export default function FinancialCoachPage() {
                                         >
                                             <div
                                                 className={`max-w-[80%] rounded-lg p-4 ${message.sender === 'user'
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-zinc-800 border border-zinc-700'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-zinc-800 border border-zinc-700'
                                                     }`}
                                             >
                                                 <div className="prose prose-invert max-w-none">
