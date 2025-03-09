@@ -200,6 +200,7 @@ def process_pdf_statements(
         Dict with analysis results
     """
     all_text = ""
+    num_statements = len(pdf_files)
 
     # Extract text from all PDFs
     for pdf_file in pdf_files:
@@ -215,5 +216,33 @@ def process_pdf_statements(
 
     # Analyze the combined text
     analysis_result = analyze_statement_with_llm(all_text, model)
+
+    # Add the number of statements to the result
+    analysis_result["numStatements"] = num_statements
+
+    # If we have multiple statements, adjust the income and expenses to be monthly averages
+    if num_statements > 1:
+        analysis_result["totalIncomeAllStatements"] = analysis_result["totalIncome"]
+        analysis_result["totalExpensesAllStatements"] = analysis_result["totalExpenses"]
+
+        # Calculate monthly averages
+        analysis_result["totalIncome"] = analysis_result["totalIncome"] / num_statements
+        analysis_result["totalExpenses"] = (
+            analysis_result["totalExpenses"] / num_statements
+        )
+
+        # Recalculate savings rate based on monthly averages
+        if analysis_result["totalIncome"] > 0:
+            analysis_result["savingsRate"] = (
+                (analysis_result["totalIncome"] - analysis_result["totalExpenses"])
+                / analysis_result["totalIncome"]
+            ) * 100
+
+        # Adjust category amounts to be monthly averages
+        if "topCategories" in analysis_result and analysis_result["topCategories"]:
+            for category in analysis_result["topCategories"]:
+                if "amount" in category:
+                    category["totalAmount"] = category["amount"]
+                    category["amount"] = category["amount"] / num_statements
 
     return analysis_result

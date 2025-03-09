@@ -2,8 +2,9 @@ import Head from "next/head";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useDropzone } from "react-dropzone";
-import { FiUpload, FiFile, FiTrash, FiAlertCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
+import { FiUpload, FiFile, FiTrash, FiAlertCircle, FiCheckCircle, FiLoader, FiInfo } from "react-icons/fi";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 // GradientGrid component for the background
 const GradientGrid = () => {
@@ -39,6 +40,7 @@ export default function StatementAnalysis() {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [uploadMessage, setUploadMessage] = useState("");
   const [analysisResults, setAnalysisResults] = useState(null);
   const [xpEarned, setXpEarned] = useState(0);
   const [traitChanges, setTraitChanges] = useState(null);
@@ -135,6 +137,18 @@ export default function StatementAnalysis() {
       const result = await response.json();
       console.log("API Response:", result);
       
+      // Save analysis results to localStorage for use by the savings planner
+      localStorage.setItem("savquest_analysis_results", JSON.stringify(result));
+      
+      // Also save the processed expense data in a format ready for the savings planner
+      const expenseData = {
+        averageMonthlyIncome: result.totalIncome || 0,
+        averageMonthlyExpenses: result.totalExpenses || 0,
+        topCategories: result.topCategories || [],
+        currentSavingsRate: result.savingsRate || 0,
+      };
+      localStorage.setItem("savquest_expense_data", JSON.stringify(expenseData));
+      
       // Update the user's traits and XP in local storage
       if (user && result.traits && result.xpEarned) {
         console.log("Updating user traits and XP");
@@ -180,6 +194,14 @@ export default function StatementAnalysis() {
       
       setAnalysisResults(result);
       setUploadSuccess(true);
+      
+      // Show a message about the Savings Planner
+      if (result.totalIncome > 0 && result.totalExpenses > 0) {
+        setUploadSuccess(true);
+        setTimeout(() => {
+          setUploadMessage("Your statement has been analyzed! Visit the Savings Planner to get personalized savings suggestions based on your spending patterns.");
+        }, 1000);
+      }
     } catch (error) {
       console.error("Upload error:", error);
       setUploadError(error.message || "Failed to upload files. Please try again.");
@@ -332,6 +354,18 @@ export default function StatementAnalysis() {
                 <span>Files uploaded successfully! Analysis complete.</span>
               </div>
             )}
+            
+            {uploadMessage && (
+              <div className="mt-4 p-3 bg-blue-900/30 border border-blue-800 rounded-md flex items-center text-blue-300">
+                <FiInfo className="mr-2 flex-shrink-0" />
+                <div>
+                  <p>{uploadMessage}</p>
+                  <Link href="/savings-planner" className="text-blue-400 hover:text-blue-300 underline mt-1 inline-block">
+                    Go to Savings Planner →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
           
           {analysisResults && (
@@ -343,18 +377,35 @@ export default function StatementAnalysis() {
             >
               <h2 className="text-xl font-semibold mb-6">Analysis Results</h2>
               
+              {analysisResults.numStatements > 1 && (
+                <div className="mb-6 p-3 bg-blue-900/30 border border-blue-800 rounded-md">
+                  <p className="text-blue-300">
+                    <span className="font-semibold">Multiple Statements Analyzed:</span> The results below show monthly averages based on {analysisResults.numStatements} statements.
+                  </p>
+                  {analysisResults.totalIncomeAllStatements && (
+                    <p className="text-sm text-blue-400 mt-2">
+                      Total across all statements: ${analysisResults.totalIncomeAllStatements.toFixed(2)} income, ${analysisResults.totalExpensesAllStatements.toFixed(2)} expenses
+                    </p>
+                  )}
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-zinc-800 p-4 rounded-lg">
-                  <p className="text-zinc-400 text-sm">Total Income</p>
+                  <p className="text-zinc-400 text-sm">
+                    {analysisResults.numStatements > 1 ? "Average Monthly Income" : "Total Income"}
+                  </p>
                   <p className="text-2xl font-bold text-green-400">${analysisResults.totalIncome.toFixed(2)}</p>
                 </div>
                 <div className="bg-zinc-800 p-4 rounded-lg">
-                  <p className="text-zinc-400 text-sm">Total Expenses</p>
+                  <p className="text-zinc-400 text-sm">
+                    {analysisResults.numStatements > 1 ? "Average Monthly Expenses" : "Total Expenses"}
+                  </p>
                   <p className="text-2xl font-bold text-red-400">${analysisResults.totalExpenses.toFixed(2)}</p>
                 </div>
                 <div className="bg-zinc-800 p-4 rounded-lg">
                   <p className="text-zinc-400 text-sm">Savings Rate</p>
-                  <p className="text-2xl font-bold text-blue-400">{analysisResults.savingsRate}%</p>
+                  <p className="text-2xl font-bold text-blue-400">{analysisResults.savingsRate.toFixed(1)}%</p>
                 </div>
               </div>
               

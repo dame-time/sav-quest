@@ -6,7 +6,7 @@ import { NavCTAs } from "./NavCTAs";
 import { useMotionValueEvent, useScroll, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FiChevronDown, FiLogOut, FiUser, FiHome, FiAward, FiBook, FiMessageSquare, FiFileText } from "react-icons/fi";
+import { FiChevronDown, FiLogOut, FiUser, FiHome, FiAward, FiBook, FiMessageSquare, FiFileText, FiTarget } from "react-icons/fi";
 
 export const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -166,6 +166,14 @@ export const NavBar = () => {
                       >
                         <FiFileText />
                         Statement Analysis
+                      </Link>
+                      <Link
+                        href="/savings-planner"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiTarget />
+                        Savings Planner
                       </Link>
                       <button
                         onClick={handleSignOut}
