@@ -87,7 +87,7 @@ export default function SaveMore() {
 
       <GradientGrid />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pt-24 pb-12 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-white">Save More</h1>
           <p className="mt-4 text-xl text-zinc-400">
