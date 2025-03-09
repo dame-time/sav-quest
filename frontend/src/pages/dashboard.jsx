@@ -241,7 +241,21 @@ export default function Dashboard() {
                                 <div className="space-y-5">
                                     {traits.map(trait => {
                                         // Get trait value from the progress data
-                                        const traitValue = progress.traits?.[trait.id] || 0;
+                                        const traitValue = progress.traits?.[trait.id];
+
+                                        // Ensure trait is in object format
+                                        const traitObj = typeof traitValue === 'number'
+                                            ? {
+                                                level: Math.max(1, Math.floor(traitValue / 20)),
+                                                xp: traitValue,
+                                                maxXp: 100
+                                            }
+                                            : traitValue || { level: 1, xp: 0, maxXp: 100 };
+
+                                        // Calculate progress percentage for the bar
+                                        const progressPercentage = typeof traitValue === 'number'
+                                            ? traitValue
+                                            : traitObj ? (traitObj.xp / traitObj.maxXp) * 100 : 0;
 
                                         return (
                                             <div key={trait.id} className="flex items-center gap-3">
@@ -264,9 +278,11 @@ export default function Dashboard() {
                                                             {trait.name}
                                                         </span>
                                                         <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-300">
-                                                            {typeof traitData === 'object' && traitData !== null
-                                                                ? `Level ${traitData.level || 1}`
-                                                                : `${Math.round(traitValue)}/100`}
+                                                            {typeof traitValue === 'object' && traitValue !== null
+                                                                ? `Level ${traitValue.level || 1}`
+                                                                : typeof traitValue === 'number'
+                                                                    ? `Level ${Math.max(1, Math.floor(traitValue / 20))}`
+                                                                    : 'Level 1'}
                                                         </span>
                                                     </div>
 
@@ -274,7 +290,7 @@ export default function Dashboard() {
                                                         <div
                                                             className="h-full rounded-full"
                                                             style={{
-                                                                width: `${traitValue}%`,
+                                                                width: `${progressPercentage}%`,
                                                                 backgroundColor: trait.barColor
                                                             }}
                                                         ></div>

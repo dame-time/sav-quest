@@ -31,133 +31,114 @@ export default function Profile() {
                 streak: 3,
                 xp: 120,
                 level: 2,
+                nextLevelXp: 200,
+                coins: 150,
                 badges: [
-                    { id: "first_login", name: "First Login", description: "Logged in for the first time", unlocked: true, icon: "🏆" },
-                    { id: "profile_complete", name: "Profile Complete", description: "Completed your profile information", unlocked: true, icon: "📝" },
+                    { id: "first_login", name: "First Login", description: "Logged in for the first time", unlocked: true, icon: "🏆", date: "2023-11-01" },
+                    { id: "profile_complete", name: "Profile Complete", description: "Completed your profile information", unlocked: true, icon: "📝", date: "2023-11-02" },
                     { id: "first_challenge", name: "Challenge Accepted", description: "Completed your first challenge", unlocked: false, icon: "🎯" },
+                    { id: "streak_3", name: "On Fire", description: "Maintained a 3-day streak", unlocked: true, icon: "🔥", date: "2023-11-03" },
+                    { id: "saver_level_2", name: "Saving Pro", description: "Reached Level 2 as a Saver", unlocked: true, icon: "💰", date: "2023-11-04" },
                 ],
                 traits: randomTraits
             }));
         }
 
-        // Load progress data
+        // Get progress data and ensure traits are in the correct format
         const progressData = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
+
+        // Convert any numeric traits to object format
+        if (progressData.traits) {
+            let traitsUpdated = false;
+
+            Object.keys(progressData.traits).forEach(traitId => {
+                const traitValue = progressData.traits[traitId];
+
+                if (typeof traitValue === 'number') {
+                    // Convert numeric value to object format
+                    progressData.traits[traitId] = {
+                        level: Math.max(1, Math.floor(traitValue / 20)), // 0-20 = level 1, 21-40 = level 2, etc.
+                        xp: traitValue,
+                        maxXp: 100
+                    };
+                    traitsUpdated = true;
+                } else if (typeof traitValue === 'object' && traitValue !== null) {
+                    // Ensure the object has all required properties
+                    if (!('level' in traitValue)) {
+                        traitValue.level = Math.max(1, Math.floor((traitValue.xp || 0) / 20));
+                        traitsUpdated = true;
+                    }
+                    if (!('maxXp' in traitValue)) {
+                        traitValue.maxXp = 100;
+                        traitsUpdated = true;
+                    }
+                    if (!('xp' in traitValue)) {
+                        traitValue.xp = 0;
+                        traitsUpdated = true;
+                    }
+                }
+            });
+
+            // If traits were updated, save back to localStorage
+            if (traitsUpdated) {
+                localStorage.setItem("savquest_progress", JSON.stringify(progressData));
+            }
+        }
+
         setProgressState(progressData);
     }, [router]);
 
-    // Function to level up a trait
     const levelUpTrait = (traitId) => {
-        if (!progressState) return;
+        // Get the current trait
+        const trait = progressState.traits[traitId];
 
-        const updatedProgress = JSON.parse(JSON.stringify(progressState)); // Deep clone to avoid reference issues
+        // Ensure trait is in object format
+        const traitObj = typeof trait === 'number'
+            ? { level: Math.max(1, Math.floor(trait / 20)), xp: trait, maxXp: 100 }
+            : { ...trait };
 
-        if (updatedProgress.traits && updatedProgress.traits[traitId] !== undefined) {
-            let trait = updatedProgress.traits[traitId];
+        // Increase XP by a random amount (10-30)
+        const xpIncrease = Math.floor(Math.random() * 21) + 10;
+        traitObj.xp += xpIncrease;
 
-            // Convert number trait to object if needed
-            if (typeof trait === 'number') {
-                // Convert the numeric trait value to our object format
-                const traitValue = trait;
-                trait = {
-                    level: Math.max(1, Math.floor(traitValue / 20)), // Rough conversion: 0-20 = level 1, 21-40 = level 2, etc.
-                    xp: (traitValue % 20) * 5, // Convert remaining points to XP
-                    maxXp: 100
-                };
-                updatedProgress.traits[traitId] = trait;
-            }
+        // Check if level up is needed
+        if (traitObj.xp >= traitObj.maxXp) {
+            traitObj.level += 1;
+            traitObj.xp = traitObj.xp - traitObj.maxXp;
+            traitObj.maxXp = 100 + (traitObj.level * 20); // Increase max XP for next level
 
-            // Add XP
-            const xpGain = Math.floor(Math.random() * 30) + 10; // Random XP between 10-39
-            trait.xp += xpGain;
-
-            // Check if level up
-            if (trait.xp >= trait.maxXp) {
-                trait.level += 1;
-                trait.xp = trait.xp - trait.maxXp;
-                trait.maxXp = Math.floor(trait.maxXp * 1.5); // Increase XP required for next level
-
-                // Show level up notification
-                alert(`Congratulations! Your ${getTraitInfo(traitId).name} trait leveled up to level ${trait.level}!`);
-
-                // Check if a new skill was unlocked
+            // Add a badge for reaching level 3
+            if (traitObj.level === 3) {
                 const traitInfo = getTraitInfo(traitId);
-                const newlyUnlockedSkills = traitInfo.skills.filter(skill => skill.levelRequired === trait.level);
+                const newBadge = {
+                    id: `${traitId}_level_3`,
+                    name: `${traitInfo.name} Expert`,
+                    description: `Reached Level 3 as a ${traitInfo.name}`,
+                    unlocked: true,
+                    icon: traitInfo.icon.props.className.includes("FiDollarSign") ? "💰" : "🏆",
+                    date: new Date().toISOString().split('T')[0]
+                };
 
-                if (newlyUnlockedSkills.length > 0) {
-                    // Add skill badges
-                    if (!updatedProgress.badges) {
-                        updatedProgress.badges = [];
-                    }
-
-                    newlyUnlockedSkills.forEach(skill => {
-                        // Get appropriate icon based on trait type
-                        let skillIcon;
-                        switch (traitId) {
-                            case 'saver':
-                                skillIcon = "💰";
-                                break;
-                            case 'investor':
-                                skillIcon = "📊";
-                                break;
-                            case 'budgeter':
-                                skillIcon = "📝";
-                                break;
-                            case 'scholar':
-                                skillIcon = "🎓";
-                                break;
-                            case 'minimalist':
-                                skillIcon = "✨";
-                                break;
-                            case 'entrepreneur':
-                                skillIcon = "💼";
-                                break;
-                            case 'techie':
-                                skillIcon = "💻";
-                                break;
-                            case 'analyst':
-                                skillIcon = "📈";
-                                break;
-                            default:
-                                skillIcon = "🌟";
-                        }
-
-                        // Create a new badge for the unlocked skill
-                        const skillBadge = {
-                            id: `${traitId}_${skill.name.toLowerCase().replace(/\s+/g, '_')}`,
-                            name: skill.name,
-                            description: `${skill.description} (${traitInfo.name} skill)`,
-                            unlocked: true,
-                            icon: skillIcon,
-                            date: new Date().toISOString(),
-                            traitColor: traitInfo.color // Store the trait color for styling
-                        };
-
-                        // Add badge if it doesn't exist already
-                        if (!updatedProgress.badges.some(badge => badge.id === skillBadge.id)) {
-                            updatedProgress.badges.push(skillBadge);
-                            // Show notification about new badge
-                            alert(`New Skill Badge Unlocked: ${skill.name}!`);
-                        }
-                    });
+                // Add badge if it doesn't exist
+                const badgeExists = progressState.badges.some(b => b.id === newBadge.id);
+                if (!badgeExists) {
+                    progressState.badges.push(newBadge);
                 }
-            } else {
-                // Show XP gain notification
-                alert(`You gained ${xpGain} XP for your ${getTraitInfo(traitId).name} trait!`);
             }
-
-            // Update overall user XP and level
-            updatedProgress.xp = (updatedProgress.xp || 0) + Math.floor(xpGain / 2);
-
-            // Check if user level up (simplified)
-            if (updatedProgress.xp >= 200 && (!updatedProgress.level || updatedProgress.level < 3)) {
-                updatedProgress.level = 3;
-                alert("Congratulations! You reached level 3!");
-            }
-
-            // Save updated progress
-            localStorage.setItem("savquest_progress", JSON.stringify(updatedProgress));
-            setProgressState(updatedProgress);
         }
+
+        // Update the trait in the progress state
+        const updatedProgress = {
+            ...progressState,
+            traits: {
+                ...progressState.traits,
+                [traitId]: traitObj
+            }
+        };
+
+        // Save to localStorage and update state
+        localStorage.setItem("savquest_progress", JSON.stringify(updatedProgress));
+        setProgressState(updatedProgress);
     };
 
     // Function to set a trait as primary
@@ -359,6 +340,11 @@ export default function Profile() {
                                             const traitInfo = getTraitInfo(traitId);
                                             if (!traitInfo) return null; // Skip if trait info not found
 
+                                            // Ensure trait is in object format
+                                            const traitObj = typeof trait === 'number'
+                                                ? { level: Math.max(1, Math.floor(trait / 20)), xp: trait, maxXp: 100 }
+                                                : trait;
+
                                             const isSelected = selectedTrait === traitId;
 
                                             return (
@@ -386,14 +372,10 @@ export default function Profile() {
                                                         </div>
                                                         <div className="ml-auto text-right">
                                                             <div className="text-lg font-bold">
-                                                                Level {typeof trait === 'number'
-                                                                    ? Math.max(1, Math.floor(trait / 20))
-                                                                    : trait.level}
+                                                                Level {traitObj.level}
                                                             </div>
                                                             <div className="text-sm text-zinc-400">
-                                                                {typeof trait === 'number'
-                                                                    ? `${trait}/100 points`
-                                                                    : `${trait.xp}/${trait.maxXp} XP`}
+                                                                {traitObj.xp}/{traitObj.maxXp} XP
                                                             </div>
                                                         </div>
                                                     </div>
@@ -403,9 +385,7 @@ export default function Profile() {
                                                         <div
                                                             className={`h-full bg-${traitInfo.color}-500`}
                                                             style={{
-                                                                width: `${typeof trait === 'number'
-                                                                    ? trait
-                                                                    : (trait.xp / trait.maxXp) * 100}%`
+                                                                width: `${(traitObj.xp / traitObj.maxXp) * 100}%`
                                                             }}
                                                         ></div>
                                                     </div>
