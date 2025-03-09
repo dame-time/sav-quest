@@ -6,7 +6,7 @@ import { NavCTAs } from "./NavCTAs";
 import { useMotionValueEvent, useScroll, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FiChevronDown, FiLogOut, FiUser, FiHome, FiAward, FiBook, FiMessageSquare, FiFileText, FiTarget, FiTrendingUp, FiDollarSign } from "react-icons/fi";
+import { FiChevronDown, FiLogOut, FiUser, FiHome, FiAward, FiBook, FiMessageSquare, FiFileText, FiTarget, FiDollarSign, FiTrendingUp, FiGift } from "react-icons/fi";
 
 export const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -77,7 +77,7 @@ export const NavBar = () => {
         duration: 1.25,
         ease: "easeInOut",
       }}
-      className={`fixed left-0 right-0 top-0 z-50 bg-zinc-950/0 py-3 transition-colors ${scrolled && "bg-zinc-950/80 backdrop-blur"}`}
+      className={`fixed left-0 right-0 top-0 z-50 ${scrolled ? "bg-zinc-950/80 backdrop-blur" : "bg-zinc-950"} py-3 transition-colors`}
     >
       <MaxWidthWrapper>
         <div className="flex items-center justify-between">
@@ -142,6 +142,14 @@ export const NavBar = () => {
                       >
                         <FiAward />
                         Leaderboards
+                      </Link>
+                      <Link
+                        href="/rewards"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiGift />
+                        Rewards
                       </Link>
                       <Link
                         href="/learn"

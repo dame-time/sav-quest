@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { FiAward, FiCheck, FiClock, FiGift } from "react-icons/fi";
+import { FiAward, FiCheck, FiClock, FiGift, FiArrowRight, FiDollarSign, FiInfo } from "react-icons/fi";
 import { useNotification } from "@/components/utils/Notification";
+import Link from "next/link";
+import { getCoinsForLevel } from "@/utils/rewards";
 
 export const RewardsPanel = () => {
     const { showSuccess, showInfo, showError } = useNotification();
@@ -10,6 +12,7 @@ export const RewardsPanel = () => {
             title: "Track Your Expenses",
             description: "Record all your expenses for today",
             xp: 20,
+            coins: 15,
             completed: false,
             icon: "📝"
         },
@@ -18,6 +21,7 @@ export const RewardsPanel = () => {
             title: "Read a Financial Article",
             description: "Learn something new about personal finance",
             xp: 15,
+            coins: 10,
             completed: false,
             icon: "📚"
         },
@@ -26,6 +30,7 @@ export const RewardsPanel = () => {
             title: "Check Your Budget",
             description: "Review your monthly budget progress",
             xp: 10,
+            coins: 5,
             completed: true,
             icon: "💼"
         }
@@ -70,10 +75,14 @@ export const RewardsPanel = () => {
         if (challenge && !challenge.completed) {
             const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
             progress.xp = (progress.xp || 0) + challenge.xp;
+
+            // Add coins for completing the challenge
+            progress.coins = (progress.coins || 0) + challenge.coins;
+
             localStorage.setItem("savquest_progress", JSON.stringify(progress));
-            
+
             // Show success notification
-            showSuccess(`Challenge completed! +${challenge.xp} XP earned`);
+            showSuccess(`Challenge completed! +${challenge.xp} XP and +${challenge.coins} coins earned`);
         }
     };
 
@@ -82,30 +91,35 @@ export const RewardsPanel = () => {
         if (!reward) return;
 
         const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
-        const userXp = progress.xp || 0;
+        const userCoins = progress.coins || 0;
 
-        if (userXp >= reward.cost && !reward.redeemed) {
-            // Deduct XP cost
-            progress.xp = userXp - reward.cost;
+        if (userCoins >= reward.cost && !reward.redeemed) {
+            // Deduct coins cost
+            progress.coins = userCoins - reward.cost;
             localStorage.setItem("savquest_progress", JSON.stringify(progress));
-            
+
             // Mark reward as redeemed
             setRewards(prev =>
                 prev.map(r =>
                     r.id === id ? { ...r, redeemed: true } : r
                 )
             );
-            
+
             // Show success notification
             showSuccess(`${reward.title} redeemed successfully!`);
         } else if (reward.redeemed) {
             // Show info notification if already redeemed
             showInfo(`You've already redeemed ${reward.title}`);
         } else {
-            // Show error notification if not enough XP
-            showError(`Not enough XP to redeem ${reward.title}`);
+            // Show error notification if not enough coins
+            showError(`Not enough coins to redeem ${reward.title}`);
         }
     };
+
+    // Get user progress data
+    const progress = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
+    const userLevel = progress.level || 1;
+    const coinsForNextLevel = getCoinsForLevel(userLevel + 1);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -124,8 +138,8 @@ export const RewardsPanel = () => {
                         <div
                             key={challenge.id}
                             className={`p-4 border rounded-lg ${challenge.completed
-                                    ? "border-green-500 bg-green-900/10"
-                                    : "border-zinc-700 bg-zinc-800/50"
+                                ? "border-green-500 bg-green-900/10"
+                                : "border-zinc-700 bg-zinc-800/50"
                                 }`}
                         >
                             <div className="flex items-start gap-3">
@@ -135,7 +149,10 @@ export const RewardsPanel = () => {
                                     <p className="text-sm text-zinc-400">{challenge.description}</p>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                    <div className="text-sm font-medium text-blue-400">+{challenge.xp} XP</div>
+                                    <div className="flex flex-col items-end">
+                                        <div className="text-sm font-medium text-blue-400">+{challenge.xp} XP</div>
+                                        <div className="text-sm font-medium text-yellow-400">+{challenge.coins} coins</div>
+                                    </div>
                                     {challenge.completed ? (
                                         <div className="mt-2 text-green-500 flex items-center gap-1">
                                             <FiCheck />
@@ -154,6 +171,14 @@ export const RewardsPanel = () => {
                         </div>
                     ))}
                 </div>
+
+                {/* Level Up Coins Info */}
+                <div className="mt-6 p-3 bg-blue-900/20 border border-blue-800 rounded-lg flex items-center gap-2">
+                    <FiInfo className="text-blue-400 flex-shrink-0" />
+                    <p className="text-xs text-blue-300">
+                        Reach Level {userLevel + 1} to earn <span className="font-bold text-yellow-400">{coinsForNextLevel} coins</span>!
+                    </p>
+                </div>
             </div>
 
             {/* Rewards Shop */}
@@ -161,28 +186,27 @@ export const RewardsPanel = () => {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Rewards Shop</h2>
                     <div className="flex items-center gap-1 text-sm">
-                        <FiAward className="text-yellow-500" />
+                        <FiDollarSign className="text-yellow-500" />
                         <span>
-                            {JSON.parse(localStorage.getItem("savquest_progress") || "{}")?.xp || 0} XP
+                            {progress.coins || 0} coins
                         </span>
                     </div>
                 </div>
 
                 <div className="space-y-4">
                     {rewards.map(reward => {
-                        const userXp = JSON.parse(localStorage.getItem("savquest_progress") || "{}")?.xp || 0;
-                        const canAfford = userXp >= reward.cost && !reward.redeemed;
+                        const userCoins = progress.coins || 0;
+                        const canAfford = userCoins >= reward.cost && !reward.redeemed;
 
                         return (
                             <div
                                 key={reward.id}
-                                className={`p-4 border rounded-lg ${
-                                    reward.redeemed 
-                                        ? "border-green-500 bg-green-900/10"
-                                        : canAfford
-                                            ? "border-purple-500 bg-purple-900/10"
-                                            : "border-zinc-700 bg-zinc-800/50 opacity-70"
-                                }`}
+                                className={`p-4 border rounded-lg ${reward.redeemed
+                                    ? "border-green-500 bg-green-900/10"
+                                    : canAfford
+                                        ? "border-purple-500 bg-purple-900/10"
+                                        : "border-zinc-700 bg-zinc-800/50 opacity-70"
+                                    }`}
                             >
                                 <div className="flex items-start gap-3">
                                     <div className="text-2xl">{reward.icon}</div>
@@ -191,7 +215,7 @@ export const RewardsPanel = () => {
                                         <p className="text-sm text-zinc-400">{reward.description}</p>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <div className="text-sm font-medium text-yellow-400">{reward.cost} XP</div>
+                                        <div className="text-sm font-medium text-yellow-400">{reward.cost} coins</div>
                                         {reward.redeemed ? (
                                             <div className="mt-2 text-green-500 flex items-center gap-1">
                                                 <FiCheck />
@@ -201,11 +225,10 @@ export const RewardsPanel = () => {
                                             <button
                                                 onClick={() => redeemReward(reward.id)}
                                                 disabled={!canAfford}
-                                                className={`mt-2 px-3 py-1 rounded text-xs flex items-center gap-1 ${
-                                                    canAfford
-                                                        ? "bg-purple-600 hover:bg-purple-700"
-                                                        : "bg-zinc-700 cursor-not-allowed"
-                                                }`}
+                                                className={`mt-2 px-3 py-1 rounded text-xs flex items-center gap-1 ${canAfford
+                                                    ? "bg-purple-600 hover:bg-purple-700"
+                                                    : "bg-zinc-700 cursor-not-allowed"
+                                                    }`}
                                             >
                                                 <FiGift />
                                                 <span>Redeem</span>
@@ -216,6 +239,17 @@ export const RewardsPanel = () => {
                             </div>
                         );
                     })}
+                </div>
+
+                {/* Link to full rewards page */}
+                <div className="mt-6 text-center">
+                    <Link
+                        href="/rewards"
+                        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                        <span>View all rewards</span>
+                        <FiArrowRight />
+                    </Link>
                 </div>
             </div>
         </div>

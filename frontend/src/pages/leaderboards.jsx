@@ -64,9 +64,9 @@ export default function Leaderboards() {
             <Head>
                 <title>Leaderboards | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-24 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <h1 className="text-3xl font-bold mb-8">Leaderboards</h1>
 
                     {/* Tab Navigation */}

@@ -671,10 +671,11 @@ export default function FinancialCoachPage() {
         <>
             <Head>
                 <title>Financial Coach | SavQuest</title>
+                <meta name="description" content="Get personalized financial advice from your AI coach" />
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 pb-4 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-24 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 h-[calc(100vh-96px)]">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col lg:flex-row gap-4 h-full">
                         {/* Financial Overview Sidebar - make it more compact */}
                         <div className="lg:w-1/3 lg:max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">

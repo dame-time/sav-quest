@@ -3,11 +3,11 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import {
     FiBook, FiLock, FiCheck, FiChevronDown, FiChevronUp,
-    FiAward, FiClock, FiStar
+    FiAward, FiClock, FiStar, FiDollarSign
 } from "react-icons/fi";
 import {
     BsCashCoin, BsPiggyBank, BsCalculator, BsJournalCheck,
-    BsBank, BsGraphUp, BsShield
+    BsBank, BsGraphUp, BsShield, BsHouseDoor, BsGear
 } from "react-icons/bs";
 import Link from "next/link";
 import { GradientGrid } from "@/components/utils/GradientGrid";
@@ -62,7 +62,9 @@ export default function LearnPage() {
                 currentUnit: personalizedPath[0]?.units[0]?.id || null,
                 unlockedUnits: [personalizedPath[0]?.units[0]?.id || null],
                 xpEarned: 0,
-                badges: []
+                coins: 0,
+                level: 1,
+                nextLevelXp: 100
             };
             localStorage.setItem("savquest_learning", JSON.stringify(learningProgress));
         }
@@ -88,39 +90,43 @@ export default function LearnPage() {
                         description: "Understanding the fundamentals of money",
                         duration: "15 min",
                         xpReward: 20,
+                        coinReward: 15,
                         icon: <BsCashCoin />,
                         color: "#FF7E1D", // Orange
                         requiredTraits: [] // Everyone gets this
                     },
                     {
                         id: "1-2",
-                        title: "Budgeting 101",
-                        description: "Learn to create your first budget",
-                        duration: "20 min",
-                        xpReward: 30,
+                        title: "Budgeting Basics",
+                        description: "Learn how to create and maintain a budget",
+                        duration: "15 min",
+                        xpReward: 20,
+                        coinReward: 15,
                         icon: <BsCalculator />,
-                        color: "#FF7E1D", // Orange
-                        requiredTraits: ["budgeter"]
+                        color: "#22C55E", // Green
+                        requiredTraits: []
                     },
                     {
                         id: "1-3",
                         title: "Saving Strategies",
-                        description: "Simple techniques to save more",
-                        duration: "18 min",
+                        description: "Simple techniques to save more money",
+                        duration: "20 min",
                         xpReward: 25,
+                        coinReward: 20,
                         icon: <BsPiggyBank />,
                         color: "#FF7E1D", // Orange
                         requiredTraits: ["saver"]
                     },
                     {
                         id: "1-4",
-                        title: "Investment Basics",
-                        description: "Introduction to growing your money",
+                        title: "Debt Management",
+                        description: "Understanding and managing debt effectively",
                         duration: "25 min",
-                        xpReward: 35,
-                        icon: <BsGraphUp />,
-                        color: "#FF7E1D", // Orange
-                        requiredTraits: ["investor"]
+                        xpReward: 30,
+                        coinReward: 25,
+                        icon: <BsGear />,
+                        color: "#22C55E", // Green
+                        requiredTraits: []
                     }
                 ]
             },
@@ -132,10 +138,11 @@ export default function LearnPage() {
                 units: [
                     {
                         id: "2-1",
-                        title: "Tracking Expenses",
-                        description: "Learn to monitor your spending",
-                        duration: "22 min",
+                        title: "Smart Spending",
+                        description: "Strategies for mindful consumption",
+                        duration: "25 min",
                         xpReward: 30,
+                        coinReward: 25,
                         icon: <BsJournalCheck />,
                         color: "#4A6DF5", // Blue
                         requiredTraits: ["budgeter"]
@@ -146,6 +153,7 @@ export default function LearnPage() {
                         description: "Preparing for unexpected expenses",
                         duration: "20 min",
                         xpReward: 35,
+                        coinReward: 30,
                         icon: <BsShield />,
                         color: "#4A6DF5", // Blue
                         requiredTraits: ["saver"]
@@ -156,6 +164,7 @@ export default function LearnPage() {
                         description: "Balancing risk and reward",
                         duration: "30 min",
                         xpReward: 40,
+                        coinReward: 35,
                         icon: <BsBank />,
                         color: "#4A6DF5", // Blue
                         requiredTraits: ["investor"]
@@ -187,6 +196,56 @@ export default function LearnPage() {
         }));
     };
 
+    const completeUnit = (unitId) => {
+        const allSections = generateLearningPath(userTraits);
+        let unit = null;
+
+        // Find the unit
+        for (const section of allSections) {
+            const foundUnit = section.units.find(u => u.id === unitId);
+            if (foundUnit) {
+                unit = foundUnit;
+                break;
+            }
+        }
+
+        if (!unit) return;
+
+        // Update progress in localStorage
+        const updatedProgress = { ...userProgress };
+
+        // Initialize completedUnits if it doesn't exist
+        if (!updatedProgress.completedUnits) {
+            updatedProgress.completedUnits = [];
+        }
+
+        // Check if already completed
+        if (updatedProgress.completedUnits.includes(unitId)) {
+            return;
+        }
+
+        // Add to completed units
+        updatedProgress.completedUnits.push(unitId);
+
+        // Add XP
+        updatedProgress.xpEarned = (updatedProgress.xpEarned || 0) + unit.xpReward;
+
+        // Add coins
+        updatedProgress.coins = (updatedProgress.coins || 0) + (unit.coinReward || 0);
+
+        // Check if level up is needed
+        const currentLevel = updatedProgress.level || 1;
+        const xpForNextLevel = updatedProgress.nextLevelXp || 100;
+
+        if (updatedProgress.xpEarned >= xpForNextLevel) {
+            updatedProgress.level = currentLevel + 1;
+            updatedProgress.nextLevelXp = 100 + (updatedProgress.level * 50);
+        }
+
+        localStorage.setItem("savquest_learning", JSON.stringify(updatedProgress));
+        setUserProgress(updatedProgress);
+    };
+
     if (!user || !learningPath.length || !userProgress) {
         return (
             <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
@@ -203,9 +262,9 @@ export default function LearnPage() {
             <Head>
                 <title>Learning Journey | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 pb-32 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-24 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <h1 className="text-3xl font-bold mb-2">Your Financial Learning Journey</h1>
                     <p className="text-zinc-400 mb-8">Personalized lessons to build your financial knowledge</p>
 
@@ -269,22 +328,22 @@ export default function LearnPage() {
                                                     <div
                                                         key={unit.id}
                                                         className={`p-4 rounded-lg border ${isCompleted
-                                                                ? 'border-green-600 bg-green-900/10'
-                                                                : isCurrent
-                                                                    ? 'border-blue-600 bg-blue-900/10'
-                                                                    : isUnlocked
-                                                                        ? `border-${section.color.replace('#', '')} bg-zinc-800/50`
-                                                                        : 'border-zinc-700 bg-zinc-800/20'
+                                                            ? 'border-green-600 bg-green-900/10'
+                                                            : isCurrent
+                                                                ? 'border-blue-600 bg-blue-900/10'
+                                                                : isUnlocked
+                                                                    ? `border-${section.color.replace('#', '')} bg-zinc-800/50`
+                                                                    : 'border-zinc-700 bg-zinc-800/20'
                                                             } ${isUnlocked ? 'cursor-pointer hover:bg-zinc-800' : 'opacity-70'}`}
                                                         onClick={() => isUnlocked && handleUnitClick(unit.id)}
                                                     >
                                                         <div className="flex items-start gap-4">
                                                             <div
                                                                 className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted
-                                                                        ? 'bg-green-600'
-                                                                        : isUnlocked
-                                                                            ? 'bg-gradient-to-br from-' + section.color.replace('#', '') + '/80 to-' + section.color.replace('#', '')
-                                                                            : 'bg-zinc-700'
+                                                                    ? 'bg-green-600'
+                                                                    : isUnlocked
+                                                                        ? 'bg-gradient-to-br from-' + section.color.replace('#', '') + '/80 to-' + section.color.replace('#', '')
+                                                                        : 'bg-zinc-700'
                                                                     }`}
                                                             >
                                                                 {isCompleted ? (
@@ -305,11 +364,17 @@ export default function LearnPage() {
 
                                                                     {isUnlocked && (
                                                                         <div className="flex items-center gap-2 text-sm">
-                                                                            <div className="flex items-center text-zinc-400">
-                                                                                <FiClock className="mr-1" /> {unit.duration}
+                                                                            <div className="flex items-center gap-1 text-blue-400">
+                                                                                <BsBook />
+                                                                                <span>{unit.duration}</span>
                                                                             </div>
-                                                                            <div className="bg-blue-900/30 border border-blue-700 rounded-full px-2 py-0.5 text-blue-400">
-                                                                                +{unit.xpReward} XP
+                                                                            <div className="flex items-center gap-1 text-green-400">
+                                                                                <FiCheck />
+                                                                                <span>+{unit.xpReward} XP</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1 text-yellow-400">
+                                                                                <FiDollarSign />
+                                                                                <span>+{unit.coinReward} coins</span>
                                                                             </div>
                                                                         </div>
                                                                     )}

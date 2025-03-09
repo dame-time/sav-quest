@@ -2,8 +2,9 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock, FiEdit, FiTarget, FiBook, FiDollarSign, FiCpu, FiPieChart, FiShield, FiZap, FiBarChart2 } from "react-icons/fi";
+import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock, FiEdit, FiTarget, FiBook } from "react-icons/fi";
 import { GradientGrid } from "@/components/utils/GradientGrid";
+import Link from "next/link";
 
 export default function Profile() {
     const router = useRouter();
@@ -25,7 +26,7 @@ export default function Profile() {
         if (!localStorage.getItem("savquest_progress")) {
             // Generate random traits for the user
             const randomTraits = generateRandomTraits();
-            
+
             localStorage.setItem("savquest_progress", JSON.stringify({
                 streak: 3,
                 xp: 120,
@@ -38,7 +39,7 @@ export default function Profile() {
                 traits: randomTraits
             }));
         }
-        
+
         // Load progress data
         const progressData = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
         setProgressState(progressData);
@@ -47,12 +48,12 @@ export default function Profile() {
     // Function to level up a trait
     const levelUpTrait = (traitId) => {
         if (!progressState) return;
-        
+
         const updatedProgress = JSON.parse(JSON.stringify(progressState)); // Deep clone to avoid reference issues
-        
+
         if (updatedProgress.traits && updatedProgress.traits[traitId] !== undefined) {
             let trait = updatedProgress.traits[traitId];
-            
+
             // Convert number trait to object if needed
             if (typeof trait === 'number') {
                 // Convert the numeric trait value to our object format
@@ -64,34 +65,34 @@ export default function Profile() {
                 };
                 updatedProgress.traits[traitId] = trait;
             }
-            
+
             // Add XP
             const xpGain = Math.floor(Math.random() * 30) + 10; // Random XP between 10-39
             trait.xp += xpGain;
-            
+
             // Check if level up
             if (trait.xp >= trait.maxXp) {
                 trait.level += 1;
                 trait.xp = trait.xp - trait.maxXp;
                 trait.maxXp = Math.floor(trait.maxXp * 1.5); // Increase XP required for next level
-                
+
                 // Show level up notification
                 alert(`Congratulations! Your ${getTraitInfo(traitId).name} trait leveled up to level ${trait.level}!`);
-                
+
                 // Check if a new skill was unlocked
                 const traitInfo = getTraitInfo(traitId);
                 const newlyUnlockedSkills = traitInfo.skills.filter(skill => skill.levelRequired === trait.level);
-                
+
                 if (newlyUnlockedSkills.length > 0) {
                     // Add skill badges
                     if (!updatedProgress.badges) {
                         updatedProgress.badges = [];
                     }
-                    
+
                     newlyUnlockedSkills.forEach(skill => {
                         // Get appropriate icon based on trait type
                         let skillIcon;
-                        switch(traitId) {
+                        switch (traitId) {
                             case 'saver':
                                 skillIcon = "💰";
                                 break;
@@ -119,7 +120,7 @@ export default function Profile() {
                             default:
                                 skillIcon = "🌟";
                         }
-                        
+
                         // Create a new badge for the unlocked skill
                         const skillBadge = {
                             id: `${traitId}_${skill.name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -130,7 +131,7 @@ export default function Profile() {
                             date: new Date().toISOString(),
                             traitColor: traitInfo.color // Store the trait color for styling
                         };
-                        
+
                         // Add badge if it doesn't exist already
                         if (!updatedProgress.badges.some(badge => badge.id === skillBadge.id)) {
                             updatedProgress.badges.push(skillBadge);
@@ -143,22 +144,22 @@ export default function Profile() {
                 // Show XP gain notification
                 alert(`You gained ${xpGain} XP for your ${getTraitInfo(traitId).name} trait!`);
             }
-            
+
             // Update overall user XP and level
             updatedProgress.xp = (updatedProgress.xp || 0) + Math.floor(xpGain / 2);
-            
+
             // Check if user level up (simplified)
             if (updatedProgress.xp >= 200 && (!updatedProgress.level || updatedProgress.level < 3)) {
                 updatedProgress.level = 3;
                 alert("Congratulations! You reached level 3!");
             }
-            
+
             // Save updated progress
             localStorage.setItem("savquest_progress", JSON.stringify(updatedProgress));
             setProgressState(updatedProgress);
         }
     };
-    
+
     // Function to set a trait as primary
     const setAsPrimaryTrait = (traitId) => {
         updateSelectedTrait(traitId);
@@ -169,32 +170,32 @@ export default function Profile() {
     const generateRandomTraits = () => {
         // Get all available trait types from getTraitInfo
         const traitTypes = Object.keys(getTraitInfo('').traits);
-        
+
         // Select 3-5 random traits for the user
         const numTraits = Math.floor(Math.random() * 3) + 3; // 3-5 traits
         const selectedTraits = [];
-        
+
         // Ensure we always have the core traits (saver, investor, budgeter)
         const coreTraits = ['saver', 'investor', 'budgeter'];
-        
+
         // Add core traits without duplicates
         coreTraits.forEach(trait => {
             if (!selectedTraits.includes(trait)) {
                 selectedTraits.push(trait);
             }
         });
-        
+
         // Add additional random traits if needed
         while (selectedTraits.length < numTraits) {
             const randomTraitIndex = Math.floor(Math.random() * traitTypes.length);
             const randomTrait = traitTypes[randomTraitIndex];
-            
+
             // Only add if not already in the list
             if (!selectedTraits.includes(randomTrait)) {
                 selectedTraits.push(randomTrait);
             }
         }
-        
+
         // Create traits object with random levels and XP
         const traits = {};
         selectedTraits.forEach(trait => {
@@ -202,7 +203,7 @@ export default function Profile() {
             const xp = Math.floor(Math.random() * 80) + 10; // XP between 10-89
             traits[trait] = { level, xp, maxXp: 100 };
         });
-        
+
         return traits;
     };
 
@@ -222,9 +223,9 @@ export default function Profile() {
             <Head>
                 <title>Your Profile | SavQuest</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-24 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Profile Summary */}
                         <div className="lg:col-span-1">
@@ -235,6 +236,12 @@ export default function Profile() {
                                     </div>
                                     <h1 className="text-2xl font-bold mt-4">{user.username}</h1>
                                     <p className="text-zinc-400">{user.email}</p>
+
+                                    {/* Coins Badge */}
+                                    <div className="mt-4 inline-flex items-center gap-2 bg-yellow-900/30 text-yellow-400 px-4 py-2 rounded-full">
+                                        <FiDollarSign className="text-yellow-500" />
+                                        <span className="font-bold">{progress.coins || 0} coins</span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
@@ -256,6 +263,14 @@ export default function Profile() {
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
+                                            <FiDollarSign className="text-yellow-500" />
+                                            <span>Coins</span>
+                                        </div>
+                                        <span className="font-bold">{progress.coins || 0}</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
                                             <FiCalendar className="text-green-500" />
                                             <span>Streak</span>
                                         </div>
@@ -272,6 +287,16 @@ export default function Profile() {
                                             {progressState?.badges ? progressState.badges.length : 0}
                                         </span>
                                     </div>
+
+                                    {/* Link to Rewards Page */}
+                                    <Link
+                                        href="/rewards"
+                                        className="mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-600 to-amber-500 text-white px-4 py-2 rounded-lg hover:from-yellow-500 hover:to-amber-400 transition-all"
+                                    >
+                                        <FiGift />
+                                        <span>View Rewards Marketplace</span>
+                                        <FiArrowRight />
+                                    </Link>
                                 </div>
                             </div>
 
@@ -284,18 +309,18 @@ export default function Profile() {
                                             // Determine if this is a skill badge by checking the ID format
                                             const isSkillBadge = badge.id.includes('_');
                                             let traitColor = 'blue';
-                                            
+
                                             if (isSkillBadge && badge.traitColor) {
                                                 traitColor = badge.traitColor;
                                             }
-                                            
+
                                             return (
                                                 <div
                                                     key={badge.id}
                                                     className={`p-4 border rounded-lg text-center ${badge.unlocked
-                                                        ? isSkillBadge 
-                                                          ? `border-${traitColor}-500 bg-${traitColor}-900/20` 
-                                                          : "border-blue-500 bg-blue-900/20"
+                                                        ? isSkillBadge
+                                                            ? `border-${traitColor}-500 bg-${traitColor}-900/20`
+                                                            : "border-blue-500 bg-blue-900/20"
                                                         : "border-zinc-700 bg-zinc-800/50 opacity-60"
                                                         }`}
                                                 >
@@ -327,185 +352,210 @@ export default function Profile() {
                                 <div className="space-y-8">
                                     {progressState?.traits && Object.entries(progressState.traits)
                                         // Filter out any duplicate trait IDs
-                                        .filter(([traitId, _], index, self) => 
+                                        .filter(([traitId, _], index, self) =>
                                             index === self.findIndex(([id, _]) => id === traitId)
                                         )
                                         .map(([traitId, trait]) => {
-                                        const traitInfo = getTraitInfo(traitId);
-                                        if (!traitInfo) return null; // Skip if trait info not found
-                                        
-                                        const isSelected = selectedTrait === traitId;
+                                            const traitInfo = getTraitInfo(traitId);
+                                            if (!traitInfo) return null; // Skip if trait info not found
 
-                                        return (
-                                            <div
-                                                key={traitId}
-                                                className={`p-4 border rounded-lg ${isSelected
-                                                    ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/20`
-                                                    : "border-zinc-700"
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-4 mb-3">
-                                                    <div className={`text-3xl p-2 rounded-full bg-${traitInfo.color}-900/30 text-${traitInfo.color}-400`}>
-                                                        {traitInfo.icon}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-medium flex items-center gap-2">
-                                                            {traitInfo.name}
-                                                            {isSelected && (
-                                                                <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-                                                                    Primary
-                                                                </span>
-                                                            )}
-                                                        </h3>
-                                                        <p className="text-sm text-zinc-400">{traitInfo.description}</p>
-                                                    </div>
-                                                    <div className="ml-auto text-right">
-                                                        <div className="text-lg font-bold">
-                                                            Level {typeof trait === 'number' 
-                                                                ? Math.max(1, Math.floor(trait / 20)) 
-                                                                : trait.level}
+                                            const isSelected = selectedTrait === traitId;
+
+                                            return (
+                                                <div
+                                                    key={traitId}
+                                                    className={`p-4 border rounded-lg ${isSelected
+                                                        ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/20`
+                                                        : "border-zinc-700"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-4 mb-3">
+                                                        <div className={`text-3xl p-2 rounded-full bg-${traitInfo.color}-900/30 text-${traitInfo.color}-400`}>
+                                                            {traitInfo.icon}
                                                         </div>
-                                                        <div className="text-sm text-zinc-400">
-                                                            {typeof trait === 'number' 
-                                                                ? `${trait}/100 points` 
-                                                                : `${trait.xp}/${trait.maxXp} XP`}
+                                                        <div>
+                                                            <h3 className="text-lg font-medium flex items-center gap-2">
+                                                                {traitInfo.name}
+                                                                {isSelected && (
+                                                                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                                                                        Primary
+                                                                    </span>
+                                                                )}
+                                                            </h3>
+                                                            <p className="text-sm text-zinc-400">{traitInfo.description}</p>
                                                         </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Progress bar */}
-                                                <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full bg-${traitInfo.color}-500`}
-                                                        style={{ width: `${typeof trait === 'number' 
-                                                            ? trait 
-                                                            : (trait.xp / trait.maxXp) * 100}%` }}
-                                                    ></div>
-                                                </div>
-
-                                                {/* Skill summary */}
-                                                {(() => {
-                                                    const traitLevel = typeof trait === 'number' 
-                                                        ? Math.max(1, Math.floor(trait / 20))
-                                                        : trait.level;
-                                                    
-                                                    const unlockedSkills = traitInfo.skills.filter(
-                                                        skill => skill.levelRequired <= traitLevel
-                                                    );
-                                                    
-                                                    const lockedSkills = traitInfo.skills.filter(
-                                                        skill => skill.levelRequired > traitLevel
-                                                    );
-                                                    
-                                                    return (
-                                                        <div className="mt-3 mb-4">
-                                                            <div className="flex justify-between text-sm">
-                                                                <span className="text-green-400">
-                                                                    {unlockedSkills.length} skills unlocked
-                                                                </span>
-                                                                <span className="text-zinc-400">
-                                                                    {lockedSkills.length} skills remaining
-                                                                </span>
+                                                        <div className="ml-auto text-right">
+                                                            <div className="text-lg font-bold">
+                                                                Level {typeof trait === 'number'
+                                                                    ? Math.max(1, Math.floor(trait / 20))
+                                                                    : trait.level}
                                                             </div>
-                                                            
-                                                            {/* Mini skill indicators */}
-                                                            <div className="flex gap-1 mt-2">
-                                                                {traitInfo.skills.map((skill, idx) => (
-                                                                    <div 
-                                                                        key={idx}
-                                                                        className={`h-1.5 flex-1 rounded-full ${
-                                                                            skill.levelRequired <= traitLevel
-                                                                                ? `bg-${traitInfo.color}-500`
-                                                                                : 'bg-zinc-700'
-                                                                        }`}
-                                                                        title={`${skill.name} (Level ${skill.levelRequired})`}
-                                                                    />
-                                                                ))}
+                                                            <div className="text-sm text-zinc-400">
+                                                                {typeof trait === 'number'
+                                                                    ? `${trait}/100 points`
+                                                                    : `${trait.xp}/${trait.maxXp} XP`}
                                                             </div>
                                                         </div>
-                                                    );
-                                                })()}
+                                                    </div>
 
-                                                {/* Unlockable skills */}
-                                                <div className="mt-4">
-                                                    <h4 className="font-medium mb-2">Unlockable Skills</h4>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {traitInfo.skills.map((skill, index) => {
-                                                            const traitLevel = typeof trait === 'number' 
-                                                                ? Math.max(1, Math.floor(trait / 20))
-                                                                : trait.level;
-                                                            const isUnlocked = traitLevel >= skill.levelRequired;
-                                                            
-                                                            // Check if this skill has a badge
-                                                            const skillBadgeId = `${traitId}_${skill.name.toLowerCase().replace(/\s+/g, '_')}`;
-                                                            const hasBadge = progressState?.badges?.some(
-                                                                badge => badge.id === skillBadgeId && badge.unlocked
-                                                            );
+                                                    {/* Progress bar */}
+                                                    <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full bg-${traitInfo.color}-500`}
+                                                            style={{
+                                                                width: `${typeof trait === 'number'
+                                                                    ? trait
+                                                                    : (trait.xp / trait.maxXp) * 100}%`
+                                                            }}
+                                                        ></div>
+                                                    </div>
 
-                                                            return (
-                                                                <div
-                                                                    key={index}
-                                                                    className={`flex flex-col p-3 border rounded-lg ${isUnlocked
-                                                                        ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/10`
-                                                                        : "border-zinc-700 bg-zinc-800/50 opacity-60"
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="text-xl">
-                                                                            {isUnlocked ? <FiUnlock className="text-green-500" /> : <FiLock className="text-zinc-500" />}
-                                                                        </div>
-                                                                        <div className="flex-1">
-                                                                            <div className="font-medium flex items-center gap-2">
-                                                                                {skill.name}
-                                                                                {hasBadge && (
-                                                                                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-                                                                                        Badged
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="text-xs text-zinc-400">
-                                                                                {isUnlocked ? "Unlocked" : `Unlocks at level ${skill.levelRequired}`}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    {skill.description && (
-                                                                        <div className="mt-2 text-sm text-zinc-300 pl-8">
-                                                                            {skill.description}
-                                                                        </div>
-                                                                    )}
+                                                    {/* Skill summary */}
+                                                    {(() => {
+                                                        const traitLevel = typeof trait === 'number'
+                                                            ? Math.max(1, Math.floor(trait / 20))
+                                                            : trait.level;
+
+                                                        const unlockedSkills = traitInfo.skills.filter(
+                                                            skill => skill.levelRequired <= traitLevel
+                                                        );
+
+                                                        const lockedSkills = traitInfo.skills.filter(
+                                                            skill => skill.levelRequired > traitLevel
+                                                        );
+
+                                                        return (
+                                                            <div className="mt-3 mb-4">
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span className="text-green-400">
+                                                                        {unlockedSkills.length} skills unlocked
+                                                                    </span>
+                                                                    <span className="text-zinc-400">
+                                                                        {lockedSkills.length} skills remaining
+                                                                    </span>
                                                                 </div>
-                                                            );
-                                                        })}
+
+                                                                {/* Mini skill indicators */}
+                                                                <div className="flex gap-1 mt-2">
+                                                                    {traitInfo.skills.map((skill, idx) => (
+                                                                        <div
+                                                                            key={idx}
+                                                                            className={`h-1.5 flex-1 rounded-full ${skill.levelRequired <= traitLevel
+                                                                                    ? `bg-${traitInfo.color}-500`
+                                                                                    : 'bg-zinc-700'
+                                                                                }`}
+                                                                            title={`${skill.name} (Level ${skill.levelRequired})`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Unlockable skills */}
+                                                    <div className="mt-4">
+                                                        <h4 className="font-medium mb-2">Unlockable Skills</h4>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {traitInfo.skills.map((skill, index) => {
+                                                                const traitLevel = typeof trait === 'number'
+                                                                    ? Math.max(1, Math.floor(trait / 20))
+                                                                    : trait.level;
+                                                                const isUnlocked = traitLevel >= skill.levelRequired;
+
+                                                                // Check if this skill has a badge
+                                                                const skillBadgeId = `${traitId}_${skill.name.toLowerCase().replace(/\s+/g, '_')}`;
+                                                                const hasBadge = progressState?.badges?.some(
+                                                                    badge => badge.id === skillBadgeId && badge.unlocked
+                                                                );
+
+                                                                return (
+                                                                    <div
+                                                                        key={index}
+                                                                        className={`flex flex-col p-3 border rounded-lg ${isUnlocked
+                                                                            ? `border-${traitInfo.color}-500 bg-${traitInfo.color}-900/10`
+                                                                            : "border-zinc-700 bg-zinc-800/50 opacity-60"
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="text-xl">
+                                                                                {isUnlocked ? <FiUnlock className="text-green-500" /> : <FiLock className="text-zinc-500" />}
+                                                                            </div>
+                                                                            <div className="flex-1">
+                                                                                <div className="font-medium flex items-center gap-2">
+                                                                                    {skill.name}
+                                                                                    {hasBadge && (
+                                                                                        <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                                                                                            Badged
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="text-xs text-zinc-400">
+                                                                                    {isUnlocked ? "Unlocked" : `Unlocks at level ${skill.levelRequired}`}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        {skill.description && (
+                                                                            <div className="mt-2 text-sm text-zinc-300 pl-8">
+                                                                                {skill.description}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Actions for this trait */}
+                                                    <div className="mt-6 flex flex-wrap gap-3 justify-between items-center">
+                                                        <button
+                                                            onClick={() => levelUpTrait(traitId)}
+                                                            className={`px-4 py-2 rounded-md bg-${traitInfo.color}-600 hover:bg-${traitInfo.color}-500 text-white text-sm transition-colors`}
+                                                        >
+                                                            Level Up This Trait
+                                                        </button>
+
+                                                        {isSelected ? (
+                                                            <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full">
+                                                                Primary Trait
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setAsPrimaryTrait(traitId)}
+                                                                className="px-4 py-2 rounded-md bg-zinc-700 hover:bg-zinc-600 text-white text-sm transition-colors"
+                                                            >
+                                                                Set as Primary
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
-
-                                                {/* Actions for this trait */}
-                                                <div className="mt-6 flex flex-wrap gap-3 justify-between items-center">
-                                                    <button
-                                                        onClick={() => levelUpTrait(traitId)}
-                                                        className={`px-4 py-2 rounded-md bg-${traitInfo.color}-600 hover:bg-${traitInfo.color}-500 text-white text-sm transition-colors`}
-                                                    >
-                                                        Level Up This Trait
-                                                    </button>
-                                                    
-                                                    {isSelected ? (
-                                                        <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full">
-                                                            Primary Trait
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => setAsPrimaryTrait(traitId)}
-                                                            className="px-4 py-2 rounded-md bg-zinc-700 hover:bg-zinc-600 text-white text-sm transition-colors"
-                                                        >
-                                                            Set as Primary
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
                                 </div>
                             </div>
+
+                            {/* Redeemed Rewards Section */}
+                            {progress.redeemedRewards && progress.redeemedRewards.length > 0 && (
+                                <div className="mt-8 bg-zinc-900/50 border border-zinc-700 rounded-lg p-6">
+                                    <h2 className="text-xl font-bold mb-4">Your Redeemed Rewards</h2>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {progress.redeemedRewards.map((reward, index) => (
+                                            <div key={`${reward.id}-${index}`} className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-lg">
+                                                <div className="text-3xl">{reward.icon}</div>
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium">{reward.title}</h3>
+                                                    <p className="text-sm text-zinc-400">
+                                                        Redeemed on {new Date(reward.redeemedAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className="px-3 py-1 bg-green-900/20 text-green-400 rounded-full text-xs">
+                                                    Redeemed
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

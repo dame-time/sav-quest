@@ -5,8 +5,10 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { RewardsPanel } from "@/components/dashboard/RewardsPanel";
 import { SmartTransactionFeed } from "@/components/dashboard/SmartTransactionFeed";
 import { FinancialHabitTracker } from "@/components/dashboard/FinancialHabitTracker";
-import { FiAward, FiTrendingUp, FiCalendar, FiStar, FiUnlock, FiInfo } from "react-icons/fi";
+import { FiAward, FiTrendingUp, FiCalendar, FiStar, FiUnlock, FiInfo, FiGift, FiDollarSign } from "react-icons/fi";
 import { GradientGrid } from "@/components/utils/GradientGrid";
+import Link from "next/link";
+import { getCoinsForLevel } from "@/utils/rewards";
 
 export default function Dashboard() {
     const { completed } = useOnboarding();
@@ -54,11 +56,11 @@ export default function Dashboard() {
         } else {
             // Convert any numeric traits to object format
             const updatedProgressData = { ...progressData };
-            
+
             if (updatedProgressData.traits) {
                 Object.keys(updatedProgressData.traits).forEach(traitId => {
                     const traitValue = updatedProgressData.traits[traitId];
-                    
+
                     if (typeof traitValue === 'number') {
                         // Convert numeric value to object format
                         updatedProgressData.traits[traitId] = {
@@ -68,11 +70,11 @@ export default function Dashboard() {
                         };
                     }
                 });
-                
+
                 // Save the updated format back to localStorage
                 localStorage.setItem("savquest_progress", JSON.stringify(updatedProgressData));
             }
-            
+
             setProgress(updatedProgressData);
         }
     }, [router]);
@@ -135,8 +137,8 @@ export default function Dashboard() {
         : [];
 
     // Calculate XP progress percentage for the level progress bar
-    const xpProgressPercentage = progress.nextLevelXp 
-        ? (progress.xp / progress.nextLevelXp) * 100 
+    const xpProgressPercentage = progress.nextLevelXp
+        ? (progress.xp / progress.nextLevelXp) * 100
         : (progress.xp % 100);
 
     return (
@@ -144,14 +146,14 @@ export default function Dashboard() {
             <Head>
                 <title>SavQuest Dashboard</title>
             </Head>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-20 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 pt-24 relative overflow-hidden">
                 <GradientGrid />
-                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                         <div>
                             <h1 className="text-3xl font-bold">Welcome back, {user.username}!</h1>
                             <p className="text-zinc-400 mt-1">Your financial journey continues</p>
-                            
+
                             {/* Display preset profile info if available */}
                             {user.presetName && (
                                 <div className="mt-2 inline-flex items-center gap-1 bg-blue-900/30 text-blue-300 px-3 py-1 rounded-full text-xs">
@@ -169,6 +171,10 @@ export default function Dashboard() {
                                 <span className="text-blue-500">✨</span>
                                 <span>Level {progress.level || 1}</span>
                             </div>
+                            <Link href="/rewards" className="bg-gradient-to-r from-yellow-600 to-amber-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:from-yellow-500 hover:to-amber-400 transition-all">
+                                <FiGift />
+                                <span>Rewards</span>
+                            </Link>
                         </div>
                     </div>
 
@@ -195,6 +201,12 @@ export default function Dashboard() {
                                         {unlockedBadges.length} badges
                                     </span>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <FiDollarSign className="text-yellow-500" />
+                                    <span className="font-medium">
+                                        {progress.coins || 0} coins
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -205,9 +217,17 @@ export default function Dashboard() {
                                 style={{ width: `${xpProgressPercentage}%` }}
                             ></div>
                         </div>
-                        <div className="flex justify-between mt-2 mb-8 text-sm text-zinc-400">
+                        <div className="flex justify-between mt-2 mb-4 text-sm text-zinc-400">
                             <span>Level {progress.level || 1}</span>
                             <span>{progress.xp}/{progress.nextLevelXp || 100} XP to Level {(progress.level || 1) + 1}</span>
+                        </div>
+
+                        {/* Level up reward info */}
+                        <div className="mb-8 p-3 bg-blue-900/20 border border-blue-800 rounded-lg flex items-center gap-3">
+                            <FiInfo className="text-blue-400" />
+                            <div className="text-sm text-blue-300">
+                                When you reach Level {(progress.level || 1) + 1}, you'll earn <span className="font-bold text-yellow-400">{getCoinsForLevel((progress.level || 1) + 1)} coins</span>!
+                            </div>
                         </div>
 
                         <div className="border-t border-zinc-700 pt-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -221,29 +241,13 @@ export default function Dashboard() {
                                 <div className="space-y-5">
                                     {traits.map(trait => {
                                         // Get trait value from the progress data
-                                        const traitData = progress.traits?.[trait.id] || 0;
-                                        
-                                        // Handle both number and object formats
-                                        let traitValue;
-                                        if (typeof traitData === 'number') {
-                                            traitValue = traitData;
-                                        } else if (typeof traitData === 'object' && traitData !== null) {
-                                            // For object format, calculate a value between 0-100 based on level and xp
-                                            const level = traitData.level || 1;
-                                            const xp = traitData.xp || 0;
-                                            const maxXp = traitData.maxXp || 100;
-                                            
-                                            // Each level is worth 20 points, plus a percentage of current level progress
-                                            traitValue = Math.min(100, ((level - 1) * 20) + ((xp / maxXp) * 20));
-                                        } else {
-                                            traitValue = 0;
-                                        }
-                                        
+                                        const traitValue = progress.traits?.[trait.id] || 0;
+
                                         return (
                                             <div key={trait.id} className="flex items-center gap-3">
-                                                <div 
+                                                <div
                                                     className="text-lg p-2 rounded-full flex-shrink-0"
-                                                    style={{ 
+                                                    style={{
                                                         backgroundColor: trait.bgColor,
                                                         color: trait.textColor
                                                     }}
@@ -253,15 +257,15 @@ export default function Dashboard() {
 
                                                 <div className="flex-grow">
                                                     <div className="flex justify-between items-center mb-1.5">
-                                                        <span 
+                                                        <span
                                                             className="font-semibold"
                                                             style={{ color: trait.textColor }}
                                                         >
                                                             {trait.name}
                                                         </span>
                                                         <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-300">
-                                                            {typeof traitData === 'object' && traitData !== null 
-                                                                ? `Level ${traitData.level || 1}` 
+                                                            {typeof traitData === 'object' && traitData !== null
+                                                                ? `Level ${traitData.level || 1}`
                                                                 : `${Math.round(traitValue)}/100`}
                                                         </span>
                                                     </div>
@@ -269,7 +273,7 @@ export default function Dashboard() {
                                                     <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden relative">
                                                         <div
                                                             className="h-full rounded-full"
-                                                            style={{ 
+                                                            style={{
                                                                 width: `${traitValue}%`,
                                                                 backgroundColor: trait.barColor
                                                             }}
