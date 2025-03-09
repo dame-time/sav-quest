@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import {
@@ -7,6 +7,11 @@ import {
 } from "react-icons/fi";
 import { GradientGrid } from "@/components/utils/GradientGrid";
 import { PieChart } from "@/components/charts/PieChart";
+import { SubscriptionChart } from "@/components/charts/SubscriptionChart";
+import ReactMarkdown from 'react-markdown';
+import { SubscriptionSelector } from "@/components/chat/SubscriptionSelector";
+import { CancellationProcess } from "@/components/chat/CancellationProcess";
+import { YesNoPrompt } from "@/components/chat/YesNoPrompt";
 
 export default function FinancialCoachPage() {
     const router = useRouter();
@@ -23,6 +28,13 @@ export default function FinancialCoachPage() {
         "What are my spending patterns?",
         "How can I reduce my expenses?"
     ]);
+    const [processingSteps, setProcessingSteps] = useState([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [showSubscriptionSelector, setShowSubscriptionSelector] = useState(false);
+    const [cancellationInProgress, setCancellationInProgress] = useState(false);
+    const [currentSubscriptions, setCurrentSubscriptions] = useState({});
+    const [selectedSubscription, setSelectedSubscription] = useState(null);
+    const [showCancellationPrompt, setShowCancellationPrompt] = useState(false);
 
     const messagesEndRef = useRef(null);
 
@@ -106,11 +118,174 @@ export default function FinancialCoachPage() {
         setInputMessage("");
         setIsLoading(true);
 
-        try {
-            // Check if this is a transaction search query
-            const isTransactionQuery = /spend|cost|pay|expense|transaction|subscription/i.test(inputMessage);
+        // Check if this is a response to a cancellation prompt
+        const isCancellationResponse = handleCancellationResponse(inputMessage);
+        if (isCancellationResponse) {
+            // Skip the rest of the function since we're showing the subscription selector
+            setIsLoading(false);
+            return;
+        }
 
-            if (isTransactionQuery) {
+        // Check if this is a simple thank you message
+        if (isThankYouMessage(inputMessage)) {
+            // Add a simple acknowledgment response
+            const acknowledgmentMessage = {
+                id: Date.now() + 1,
+                sender: "coach",
+                content: "You're welcome! I'm here if you need any more help with your finances.",
+                timestamp: new Date().toISOString()
+            };
+
+            setMessages([...updatedMessages, acknowledgmentMessage]);
+            localStorage.setItem("savquest_coach_messages", JSON.stringify([...updatedMessages, acknowledgmentMessage]));
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            // Check if this is a subscription query
+            const isSubscriptionQuery = /netflix|hulu|disney|spotify|amazon prime|subscription/i.test(inputMessage);
+
+            // Check if this is a transaction search query
+            const isTransactionQuery = /spend|cost|pay|expense|transaction/i.test(inputMessage) && !isSubscriptionQuery;
+
+            if (isSubscriptionQuery) {
+                // Initial API call to get processing steps
+                const initialResponse = await fetch('/api/v1/coach/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: inputMessage })
+                });
+
+                if (!initialResponse.ok) {
+                    throw new Error('Failed to get response from coach');
+                }
+
+                const initialData = await initialResponse.json();
+
+                // Add processing message
+                const processingMessage = {
+                    id: Date.now() + 1,
+                    sender: "coach",
+                    content: initialData.response,
+                    type: "process_start",
+                    timestamp: new Date().toISOString()
+                };
+
+                setMessages([...updatedMessages, processingMessage]);
+                setProcessingSteps(initialData.processingSteps);
+                setIsProcessing(true);
+
+                // Update processing steps status without adding separate messages
+                initialData.processingSteps.forEach((step, index) => {
+                    setTimeout(() => {
+                        setProcessingSteps(prev =>
+                            prev.map((s, i) =>
+                                i === index ? { ...s, status: "in_progress" } : s
+                            )
+                        );
+
+                        // Update the process_start message to show progress
+                        setMessages(prev =>
+                            prev.map(m =>
+                                m.type === "process_start"
+                                    ? { ...m } // Just trigger a re-render
+                                    : m
+                            )
+                        );
+                    }, 1000 * (index + 1)); // Stagger the steps
+                });
+
+                // Make second API call to get actual subscription analysis
+                setTimeout(async () => {
+                    try {
+                        const analysisResponse = await fetch('/api/v1/coach/subscription-analysis', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                user_id: 1,
+                                services: initialData.services
+                            })
+                        });
+
+                        if (!analysisResponse.ok) {
+                            throw new Error('Failed to analyze subscriptions');
+                        }
+
+                        const analysisData = await analysisResponse.json();
+
+                        // Update processing steps
+                        setProcessingSteps(analysisData.processingSteps);
+
+                        // Add visualization message
+                        const visualizationMessage = {
+                            id: Date.now() + 100,
+                            sender: "coach",
+                            content: "Here's a breakdown of your subscription costs:",
+                            type: "subscription_visualization",
+                            data: {
+                                subscriptions: analysisData.subscriptionData,
+                                monthlyTotal: analysisData.analysis.monthlyTotal,
+                                annualTotal: analysisData.analysis.annualTotal
+                            },
+                            timestamp: new Date().toISOString()
+                        };
+
+                        // Add analysis message
+                        const analysisMessage = {
+                            id: Date.now() + 101,
+                            sender: "coach",
+                            content: analysisData.analysis.recommendations,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        // Set the state to show the prompt
+                        setShowCancellationPrompt(true);
+
+                        // Update messages - remove all process_step and process_start messages
+                        setMessages(prev => [
+                            ...prev.filter(m => m.type !== "process_step" && m.type !== "process_start"),
+                            visualizationMessage,
+                            analysisMessage
+                        ]);
+
+                        // Save to localStorage
+                        const newMessages = [
+                            ...updatedMessages.filter(m => m.sender === "user"),
+                            visualizationMessage,
+                            analysisMessage
+                        ];
+                        localStorage.setItem("savquest_coach_messages", JSON.stringify(newMessages));
+
+                        // Update suggested questions
+                        setSuggestedQuestions([
+                            "How can I reduce my subscription costs?",
+                            "Which streaming service offers the best value?",
+                            "What's my total monthly entertainment budget?"
+                        ]);
+
+                        setIsProcessing(false);
+
+                        // Check for cancellation intent
+                        if (analysisData.analysis && analysisData.analysis.cancellationPrompt &&
+                            /yes|sure|cancel|proceed/i.test(inputMessage)) {
+
+                            // Show subscription selector
+                            setCurrentSubscriptions(analysisData.subscriptionData);
+                            setShowSubscriptionSelector(true);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error analyzing subscriptions:', error);
+                        handleAnalysisError();
+                    }
+                }, 4000); // Give time for the steps to display
+
+            } else if (isTransactionQuery) {
                 // Add a "searching" message
                 const searchingMessage = {
                     id: Date.now() + 1,
@@ -121,72 +296,106 @@ export default function FinancialCoachPage() {
                 };
 
                 setMessages([...updatedMessages, searchingMessage]);
-            }
 
-            // Call the API
-            const response = await fetch('/api/v1/coach/message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ message: inputMessage })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get response from coach');
-            }
-
-            const data = await response.json();
-
-            // If this was a transaction search, add visualization
-            if (data.searchResults) {
-                // Add search results message
-                const resultsMessage = {
-                    id: Date.now() + 2,
-                    sender: "coach",
-                    content: `Found ${data.searchResults.transactions.length} transactions related to your query.`,
-                    type: "search_results",
-                    data: data.searchResults.summary,
-                    timestamp: new Date().toISOString()
-                };
-
-                // Add visualization message
-                const visualizationMessage = {
-                    id: Date.now() + 3,
-                    sender: "coach",
-                    content: "Here's a breakdown of your spending:",
-                    type: "visualization",
-                    data: {
-                        type: "pie_chart",
-                        chartData: data.searchResults.summary.by_merchant
+                // Rest of your transaction search code...
+                const response = await fetch('/api/v1/coach/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     },
+                    body: JSON.stringify({ message: inputMessage })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response from coach');
+                }
+
+                const data = await response.json();
+
+                // If this was a transaction search, add visualization
+                if (data.searchResults) {
+                    // Add search results message
+                    const resultsMessage = {
+                        id: Date.now() + 2,
+                        sender: "coach",
+                        content: `Found ${data.searchResults.transactions.length} transactions related to your query.`,
+                        type: "search_results",
+                        data: data.searchResults.summary,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // Add visualization message
+                    const visualizationMessage = {
+                        id: Date.now() + 3,
+                        sender: "coach",
+                        content: "Here's a breakdown of your spending:",
+                        type: "visualization",
+                        data: {
+                            type: "pie_chart",
+                            chartData: data.searchResults.summary.by_merchant
+                        },
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // Add these messages to the chat
+                    setMessages(prev => [...prev.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage]);
+
+                    // Update localStorage with the new messages
+                    const newMessages = [...updatedMessages.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage];
+                    localStorage.setItem("savquest_coach_messages", JSON.stringify(newMessages));
+                }
+
+                // Add the AI response
+                const aiMessage = {
+                    id: Date.now() + 4,
+                    sender: "coach",
+                    content: data.response,
                     timestamp: new Date().toISOString()
                 };
 
-                // Add these messages to the chat
-                setMessages(prev => [...prev.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage]);
+                // Update messages state with AI response
+                setMessages(prev => {
+                    const newMessages = [...prev.filter(m => m.type !== "process_step"), aiMessage];
+                    localStorage.setItem("savquest_coach_messages", JSON.stringify(newMessages));
+                    return newMessages;
+                });
+
+                // Update suggested questions
+                if (data.suggestedQuestions) {
+                    setSuggestedQuestions(data.suggestedQuestions);
+                }
+            } else {
+                // Regular question processing
+                const response = await fetch('/api/v1/coach/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: inputMessage })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response from coach');
+                }
+
+                const data = await response.json();
+
+                // Add the AI response
+                const aiMessage = {
+                    id: Date.now() + 1,
+                    sender: "coach",
+                    content: data.response,
+                    timestamp: new Date().toISOString()
+                };
+
+                setMessages([...updatedMessages, aiMessage]);
+                localStorage.setItem("savquest_coach_messages", JSON.stringify([...updatedMessages, aiMessage]));
+
+                // Update suggested questions
+                if (data.suggestedQuestions) {
+                    setSuggestedQuestions(data.suggestedQuestions);
+                }
             }
-
-            // Add the AI response
-            const aiMessage = {
-                id: Date.now() + 4,
-                sender: "coach",
-                content: data.response,
-                timestamp: new Date().toISOString()
-            };
-
-            // Update messages and save to localStorage
-            const finalMessages = isTransactionQuery
-                ? [...updatedMessages.filter(m => m.type !== "process_step"), resultsMessage, visualizationMessage, aiMessage]
-                : [...updatedMessages, aiMessage];
-
-            setMessages(finalMessages);
-            localStorage.setItem("savquest_coach_messages", JSON.stringify(finalMessages));
-
-            // Update suggested questions
-            setSuggestedQuestions(data.suggestedQuestions);
-
         } catch (error) {
             console.error('Error sending message:', error);
 
@@ -194,12 +403,15 @@ export default function FinancialCoachPage() {
             const errorMessage = {
                 id: Date.now() + 1,
                 sender: "coach",
-                content: "I'm sorry, I'm having trouble responding right now. Please try again later.",
+                content: "I'm having trouble connecting to my financial analysis system right now. Please try again in a moment.",
                 timestamp: new Date().toISOString()
             };
 
-            setMessages([...updatedMessages, errorMessage]);
-            localStorage.setItem("savquest_coach_messages", JSON.stringify([...updatedMessages, errorMessage]));
+            setMessages(prev => {
+                const newMessages = [...prev.filter(m => m.type !== "process_step"), errorMessage];
+                localStorage.setItem("savquest_coach_messages", JSON.stringify(newMessages));
+                return newMessages;
+            });
         } finally {
             setIsLoading(false);
         }
@@ -281,6 +493,167 @@ export default function FinancialCoachPage() {
             }]);
             localStorage.setItem("savquest_coach_messages", JSON.stringify([]));
         }
+    };
+
+    // Add a function to handle analysis errors
+    const handleAnalysisError = () => {
+        setIsProcessing(false);
+
+        // Add error message
+        const errorMessage = {
+            id: Date.now() + 1,
+            sender: "coach",
+            content: "I encountered an error while analyzing your subscription data. Let me provide a general response instead.",
+            timestamp: new Date().toISOString()
+        };
+
+        // Add fallback analysis
+        const fallbackMessage = {
+            id: Date.now() + 2,
+            sender: "coach",
+            content: "Based on average costs, streaming services like Netflix ($15.99/mo), Hulu ($11.99/mo), and Disney+ ($7.99/mo) would cost about $35.97 monthly or $431.64 annually. This represents about 0.8% of your monthly income, which is well within the recommended entertainment budget of 5-10%. Consider evaluating which services you use most frequently to ensure you're getting value from each subscription.",
+            timestamp: new Date().toISOString()
+        };
+
+        setMessages(prev => [
+            ...prev.filter(m => m.type !== "process_step" && m.type !== "process_start"),
+            errorMessage,
+            fallbackMessage
+        ]);
+    };
+
+    // Add a function to handle subscription cancellation
+    const handleCancelSubscription = async (subscription) => {
+        setSelectedSubscription(subscription);
+        setShowSubscriptionSelector(false);
+        setCancellationInProgress(true);
+
+        try {
+            const response = await fetch('/api/v1/coach/cancel-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: 1,
+                    subscription: subscription
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to cancel subscription');
+            }
+
+            const data = await response.json();
+
+            // Will be handled by the CancellationProcess component's onComplete
+        } catch (error) {
+            console.error('Error cancelling subscription:', error);
+            setCancellationInProgress(false);
+
+            // Add error message
+            const errorMessage = {
+                id: Date.now() + 1,
+                sender: "coach",
+                content: "I encountered an error while trying to cancel your subscription. Please try again later.",
+                timestamp: new Date().toISOString()
+            };
+
+            setMessages(prev => [...prev, errorMessage]);
+        }
+    };
+
+    // Update the handleCancellationComplete function
+    const handleCancellationComplete = () => {
+        setCancellationInProgress(false);
+
+        // Create a new success message
+        const successMessage = {
+            id: Date.now() + 1,
+            sender: "coach",
+            content: `I've successfully cancelled your ${selectedSubscription} subscription. Is there anything else I can help you with today?`,
+            timestamp: new Date().toISOString()
+        };
+
+        // Replace any existing success messages for this subscription
+        const filteredMessages = messages.filter(m =>
+            !(m.sender === "coach" &&
+                m.content.includes(`successfully cancelled your ${selectedSubscription} subscription`))
+        );
+
+        // Add the new success message
+        const updatedMessages = [...filteredMessages, successMessage];
+        setMessages(updatedMessages);
+
+        // Save to localStorage
+        localStorage.setItem("savquest_coach_messages", JSON.stringify(updatedMessages));
+
+        // Update suggested questions to be more general
+        setSuggestedQuestions([
+            "How can I improve my savings?",
+            "What's my current financial health?",
+            "How do I create a budget?"
+        ]);
+    };
+
+    // Update the handleCancellationResponse function
+    const handleCancellationResponse = (userMessage) => {
+        // Check if the last coach message was the cancellation prompt
+        const lastCoachMessage = messages
+            .filter(m => m.sender === "coach")
+            .pop();
+
+        if (lastCoachMessage &&
+            lastCoachMessage.content === "Would you like me to help you cancel any of these subscriptions?") {
+
+            // Check if user's response indicates they want to cancel
+            if (/yes|sure|cancel|proceed|ok|okay|yep|yeah/i.test(userMessage)) {
+                // Get the subscription data from the last visualization message
+                const visualizationMessage = messages.find(m => m.type === "subscription_visualization");
+                if (visualizationMessage && visualizationMessage.data && visualizationMessage.data.subscriptions) {
+                    // Add a processing message
+                    const processingMessage = {
+                        id: Date.now() + 1,
+                        sender: "coach",
+                        content: "Let me prepare the cancellation options for you...",
+                        timestamp: new Date().toISOString()
+                    };
+
+                    setMessages(prev => [...prev, processingMessage]);
+
+                    // Show subscription selector after a delay
+                    setTimeout(() => {
+                        setCurrentSubscriptions(visualizationMessage.data.subscriptions);
+                        setShowSubscriptionSelector(true);
+
+                        // Remove the processing message
+                        setMessages(prev => prev.filter(m => m.content !== "Let me prepare the cancellation options for you..."));
+                    }, 1200);
+
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    // Add a function to detect thank you messages and provide a simple response
+    const isThankYouMessage = (message) => {
+        const thankYouPatterns = /thank|thanks|thx|thankyou|great|awesome|good job|nice/i;
+        return thankYouPatterns.test(message) && message.split(' ').length < 5;
+    };
+
+    // Add these styles to your component or in a separate CSS file
+    // You can add this right before the return statement in your component
+
+    const markdownStyles = {
+        container: "prose prose-invert max-w-none",
+        heading: "font-bold text-xl mb-2 mt-4",
+        paragraph: "mb-3",
+        bold: "font-bold text-blue-400",
+        list: "pl-5 space-y-2 mb-4",
+        listItem: "flex items-start",
+        listItemBullet: "mr-2 text-blue-400 flex-shrink-0",
     };
 
     if (!user || !userProgress || !userFinancialData) {
@@ -426,15 +799,43 @@ export default function FinancialCoachPage() {
                                                     ? 'bg-blue-600 text-white'
                                                     : message.type === 'process_step'
                                                         ? 'bg-zinc-800/70 border border-zinc-700'
-                                                        : message.type === 'search_results' || message.type === 'visualization'
-                                                            ? 'bg-zinc-800/90 border border-zinc-600'
-                                                            : 'bg-zinc-800 border border-zinc-700'
+                                                        : message.type === 'process_start'
+                                                            ? 'bg-zinc-800/70 border border-zinc-700'
+                                                            : message.type === 'search_results' || message.type === 'visualization' || message.type === 'subscription_visualization'
+                                                                ? 'bg-zinc-800/90 border border-zinc-600'
+                                                                : 'bg-zinc-800 border border-zinc-700'
                                                     }`}
                                             >
                                                 {message.type === 'process_step' ? (
                                                     <div className="flex items-center">
                                                         <div className="mr-2 w-4 h-4 rounded-full border-2 border-t-transparent border-blue-400 animate-spin"></div>
                                                         <div>{message.content}</div>
+                                                    </div>
+                                                ) : message.type === 'process_start' ? (
+                                                    <div>
+                                                        <div>{message.content}</div>
+                                                        <div className="mt-3 space-y-2">
+                                                            {processingSteps.map((step, index) => (
+                                                                <div
+                                                                    key={step.id}
+                                                                    className={`flex items-center ${step.status === 'completed'
+                                                                        ? 'text-green-400'
+                                                                        : step.status === 'in_progress'
+                                                                            ? 'text-blue-400'
+                                                                            : 'text-zinc-500'
+                                                                        }`}
+                                                                >
+                                                                    {step.status === 'completed' ? (
+                                                                        <FiCheckCircle className="mr-2" />
+                                                                    ) : step.status === 'in_progress' ? (
+                                                                        <div className="mr-2 w-4 h-4 rounded-full border-2 border-t-transparent border-blue-400 animate-spin"></div>
+                                                                    ) : (
+                                                                        <FiClock className="mr-2" />
+                                                                    )}
+                                                                    <span>{step.message}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 ) : message.type === 'search_results' ? (
                                                     <div>
@@ -457,9 +858,33 @@ export default function FinancialCoachPage() {
                                                             <PieChart data={message.data.chartData} />
                                                         </div>
                                                     </div>
+                                                ) : message.type === 'subscription_visualization' ? (
+                                                    <div>
+                                                        <div className="mb-2">{message.content}</div>
+                                                        <div className="bg-zinc-900/80 p-3 rounded-md">
+                                                            <SubscriptionChart data={message.data} />
+                                                        </div>
+                                                    </div>
                                                 ) : (
-                                                    <div className="prose prose-invert max-w-none">
-                                                        {message.content}
+                                                    <div className={markdownStyles.container}>
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                h1: ({ node, ...props }) => <h1 className={markdownStyles.heading} {...props} />,
+                                                                h2: ({ node, ...props }) => <h2 className={markdownStyles.heading} {...props} />,
+                                                                h3: ({ node, ...props }) => <h3 className={markdownStyles.heading} {...props} />,
+                                                                p: ({ node, ...props }) => <p className={markdownStyles.paragraph} {...props} />,
+                                                                strong: ({ node, ...props }) => <strong className={markdownStyles.bold} {...props} />,
+                                                                ul: ({ node, ...props }) => <ul className={markdownStyles.list} {...props} />,
+                                                                li: ({ node, children, ...props }) => (
+                                                                    <li className={markdownStyles.listItem} {...props}>
+                                                                        <span className={markdownStyles.listItemBullet}>•</span>
+                                                                        <span>{children}</span>
+                                                                    </li>
+                                                                ),
+                                                            }}
+                                                        >
+                                                            {message.content}
+                                                        </ReactMarkdown>
                                                     </div>
                                                 )}
 
@@ -478,6 +903,77 @@ export default function FinancialCoachPage() {
                                                     <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                                     <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {showSubscriptionSelector && (
+                                        <div className="flex justify-start">
+                                            <div className="max-w-[80%]">
+                                                <SubscriptionSelector
+                                                    subscriptions={currentSubscriptions}
+                                                    onCancel={handleCancelSubscription}
+                                                    onClose={() => setShowSubscriptionSelector(false)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {cancellationInProgress && (
+                                        <div className="flex justify-start">
+                                            <div className="max-w-[80%]">
+                                                <CancellationProcess
+                                                    subscription={selectedSubscription}
+                                                    onComplete={handleCancellationComplete}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {showCancellationPrompt && (
+                                        <div className="flex justify-start">
+                                            <div className="max-w-[80%]">
+                                                <YesNoPrompt
+                                                    question="Would you like me to help you cancel any of these subscriptions?"
+                                                    onYes={() => {
+                                                        setShowCancellationPrompt(false);
+                                                        // Get the subscription data from the last visualization message
+                                                        const visualizationMessage = messages.find(m => m.type === "subscription_visualization");
+                                                        if (visualizationMessage && visualizationMessage.data && visualizationMessage.data.subscriptions) {
+                                                            // Add a processing message
+                                                            const processingMessage = {
+                                                                id: Date.now() + 1,
+                                                                sender: "coach",
+                                                                content: "Let me prepare the cancellation options for you...",
+                                                                timestamp: new Date().toISOString()
+                                                            };
+
+                                                            setMessages(prev => [...prev, processingMessage]);
+
+                                                            // Show subscription selector after a delay
+                                                            setTimeout(() => {
+                                                                setCurrentSubscriptions(visualizationMessage.data.subscriptions);
+                                                                setShowSubscriptionSelector(true);
+
+                                                                // Remove the processing message
+                                                                setMessages(prev => prev.filter(m => m.content !== "Let me prepare the cancellation options for you..."));
+                                                            }, 1200);
+                                                        }
+                                                    }}
+                                                    onNo={() => {
+                                                        setShowCancellationPrompt(false);
+                                                        // Add a response message
+                                                        const responseMessage = {
+                                                            id: Date.now() + 1,
+                                                            sender: "coach",
+                                                            content: "No problem! Let me know if you need any other help with your finances.",
+                                                            timestamp: new Date().toISOString()
+                                                        };
+
+                                                        setMessages(prev => [...prev, responseMessage]);
+                                                        localStorage.setItem("savquest_coach_messages", JSON.stringify([...messages, responseMessage]));
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     )}
