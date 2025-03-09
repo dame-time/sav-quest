@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.7",
+    "axios": "^1.8.2",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
     "framer-motion": "^11.0.20",
@@ -25,7 +29,11 @@
     "tailwind-merge": "^2.2.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
     "autoprefixer": "^10.0.1",
+    "babel-plugin-styled-components": "^2.1.4",
+    "babel-preset-next": "^1.4.0",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",

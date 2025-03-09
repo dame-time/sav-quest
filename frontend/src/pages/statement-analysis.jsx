@@ -165,16 +165,45 @@ export default function StatementAnalysis() {
         const traitChanges = {};
         Object.keys(result.traits).forEach(trait => {
           console.log(`Processing trait: ${trait}`);
-          const currentValue = updatedUser.traits[trait] || 0;
+          
+          // Get current trait value (could be number or object)
+          let currentValue = updatedUser.traits[trait] || 0;
+          let currentLevel = 0;
+          let currentXp = 0;
+          
+          // Handle current value based on its type
+          if (typeof currentValue === 'number') {
+            // For numeric values, calculate equivalent level and XP
+            currentLevel = Math.max(1, Math.floor(currentValue / 20));
+            currentXp = (currentValue % 20) * 5;
+          } else if (typeof currentValue === 'object' && currentValue !== null) {
+            // For object values, extract level and XP
+            currentLevel = currentValue.level || 1;
+            currentXp = currentValue.xp || 0;
+            // Convert to numeric for animation purposes
+            currentValue = ((currentLevel - 1) * 20) + (currentXp / 5);
+          }
+          
+          // Get new trait value from analysis result (always numeric)
           const newValue = result.traits[trait];
+          
+          // Calculate new level and XP
+          const newLevel = Math.max(1, Math.floor(newValue / 20));
+          const newXp = (newValue % 20) * 5;
+          
+          // Store changes for animation
           traitChanges[trait] = {
             from: currentValue,
             to: newValue,
             change: newValue - currentValue
           };
           
-          // Update user traits
-          updatedUser.traits[trait] = newValue;
+          // Update user traits with object format
+          updatedUser.traits[trait] = {
+            level: newLevel,
+            xp: newXp,
+            maxXp: 100
+          };
         });
         console.log("Trait changes:", traitChanges);
         

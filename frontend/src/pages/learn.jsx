@@ -32,7 +32,16 @@ export default function LearnPage() {
         // Get user traits to personalize content
         const progressData = JSON.parse(localStorage.getItem("savquest_progress") || "{}");
         const userTraits = Object.keys(progressData.traits || {})
-            .filter(trait => progressData.traits[trait].level > 0);
+            .filter(trait => {
+                const traitData = progressData.traits[trait];
+                // Handle both number and object formats
+                if (typeof traitData === 'number') {
+                    return traitData > 0;
+                } else if (typeof traitData === 'object' && traitData !== null) {
+                    return traitData.level > 0;
+                }
+                return false;
+            });
 
         // Generate personalized learning path based on traits
         const personalizedPath = generateLearningPath(userTraits);

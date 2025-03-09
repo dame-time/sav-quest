@@ -3,6 +3,7 @@ from app.api.api_v1.endpoints import (
     challenges,
     coach,
     progress,
+    savings_opportunities,
     savings_planner,
     statement_analysis,
     users,
@@ -20,4 +21,9 @@ api_router.include_router(
 )
 api_router.include_router(
     savings_planner.router, prefix="/savings-planner", tags=["savings-planner"]
+)
+api_router.include_router(
+    savings_opportunities.router,
+    prefix="/savings-opportunities",
+    tags=["savings-opportunities"],
 )

@@ -43,16 +43,37 @@ export default function Dashboard() {
                     { id: "saver_level_2", name: "Saving Pro", description: "Reached Level 2 as a Saver", unlocked: true, icon: "💰", date: "2023-11-04" },
                 ],
                 traits: {
-                    saver: 45,
-                    investor: 25,
-                    planner: 40,
-                    knowledgeable: 30
+                    saver: { level: 2, xp: 45, maxXp: 100 },
+                    investor: { level: 1, xp: 25, maxXp: 100 },
+                    planner: { level: 2, xp: 40, maxXp: 100 },
+                    knowledgeable: { level: 1, xp: 30, maxXp: 100 }
                 }
             };
             localStorage.setItem("savquest_progress", JSON.stringify(defaultProgress));
             setProgress(defaultProgress);
         } else {
-            setProgress(progressData);
+            // Convert any numeric traits to object format
+            const updatedProgressData = { ...progressData };
+            
+            if (updatedProgressData.traits) {
+                Object.keys(updatedProgressData.traits).forEach(traitId => {
+                    const traitValue = updatedProgressData.traits[traitId];
+                    
+                    if (typeof traitValue === 'number') {
+                        // Convert numeric value to object format
+                        updatedProgressData.traits[traitId] = {
+                            level: Math.max(1, Math.floor(traitValue / 20)), // 0-20 = level 1, 21-40 = level 2, etc.
+                            xp: (traitValue % 20) * 5, // Convert remaining points to XP
+                            maxXp: 100
+                        };
+                    }
+                });
+                
+                // Save the updated format back to localStorage
+                localStorage.setItem("savquest_progress", JSON.stringify(updatedProgressData));
+            }
+            
+            setProgress(updatedProgressData);
         }
     }, [router]);
 
@@ -200,7 +221,23 @@ export default function Dashboard() {
                                 <div className="space-y-5">
                                     {traits.map(trait => {
                                         // Get trait value from the progress data
-                                        const traitValue = progress.traits?.[trait.id] || 0;
+                                        const traitData = progress.traits?.[trait.id] || 0;
+                                        
+                                        // Handle both number and object formats
+                                        let traitValue;
+                                        if (typeof traitData === 'number') {
+                                            traitValue = traitData;
+                                        } else if (typeof traitData === 'object' && traitData !== null) {
+                                            // For object format, calculate a value between 0-100 based on level and xp
+                                            const level = traitData.level || 1;
+                                            const xp = traitData.xp || 0;
+                                            const maxXp = traitData.maxXp || 100;
+                                            
+                                            // Each level is worth 20 points, plus a percentage of current level progress
+                                            traitValue = Math.min(100, ((level - 1) * 20) + ((xp / maxXp) * 20));
+                                        } else {
+                                            traitValue = 0;
+                                        }
                                         
                                         return (
                                             <div key={trait.id} className="flex items-center gap-3">
@@ -223,7 +260,9 @@ export default function Dashboard() {
                                                             {trait.name}
                                                         </span>
                                                         <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-300">
-                                                            {traitValue}/100
+                                                            {typeof traitData === 'object' && traitData !== null 
+                                                                ? `Level ${traitData.level || 1}` 
+                                                                : `${Math.round(traitValue)}/100`}
                                                         </span>
                                                     </div>
 
