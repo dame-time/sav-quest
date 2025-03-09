@@ -7,7 +7,7 @@ import {
 } from "react-icons/fi";
 import {
     BsCashCoin, BsPiggyBank, BsCalculator, BsJournalCheck,
-    BsBank, BsGraphUp, BsShield, BsHouseDoor, BsGear
+    BsBank, BsGraphUp, BsShield, BsHouseDoor, BsGear, BsBook
 } from "react-icons/bs";
 import Link from "next/link";
 import { GradientGrid } from "@/components/utils/GradientGrid";

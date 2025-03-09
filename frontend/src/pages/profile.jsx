@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock, FiEdit, FiTarget, FiBook } from "react-icons/fi";
+import { FiAward, FiCalendar, FiLock, FiStar, FiTrendingUp, FiUnlock, FiEdit, FiTarget, FiBook, FiGift, FiDollarSign, FiArrowRight, FiBarChart2, FiCpu, FiPieChart } from "react-icons/fi";
 import { GradientGrid } from "@/components/utils/GradientGrid";
 import Link from "next/link";
 
@@ -207,9 +207,9 @@ export default function Profile() {
         return traits;
     };
 
-    if (!user) {
+    if (!user || !progressState) {
         return (
-            <div className="min-h-screen bg-zinc-950 pt-20 relative overflow-hidden">
+            <div className="min-h-screen bg-zinc-950 pt-24 relative overflow-hidden">
                 <GradientGrid />
                 <div className="relative z-10 flex items-center justify-center h-full">
                     Loading...
@@ -240,7 +240,7 @@ export default function Profile() {
                                     {/* Coins Badge */}
                                     <div className="mt-4 inline-flex items-center gap-2 bg-yellow-900/30 text-yellow-400 px-4 py-2 rounded-full">
                                         <FiDollarSign className="text-yellow-500" />
-                                        <span className="font-bold">{progress.coins || 0} coins</span>
+                                        <span className="font-bold">{progressState.coins || 0} coins</span>
                                     </div>
                                 </div>
 
@@ -250,7 +250,7 @@ export default function Profile() {
                                             <FiStar className="text-yellow-500" />
                                             <span>Level</span>
                                         </div>
-                                        <span className="font-bold">{progressState?.level || 1}</span>
+                                        <span className="font-bold">{progressState.level || 1}</span>
                                     </div>
 
                                     <div className="flex items-center justify-between">
@@ -258,7 +258,7 @@ export default function Profile() {
                                             <FiTrendingUp className="text-blue-500" />
                                             <span>XP</span>
                                         </div>
-                                        <span className="font-bold">{progressState?.xp || 0}</span>
+                                        <span className="font-bold">{progressState.xp || 0}</span>
                                     </div>
 
                                     <div className="flex items-center justify-between">
@@ -266,7 +266,7 @@ export default function Profile() {
                                             <FiDollarSign className="text-yellow-500" />
                                             <span>Coins</span>
                                         </div>
-                                        <span className="font-bold">{progress.coins || 0}</span>
+                                        <span className="font-bold">{progressState.coins || 0}</span>
                                     </div>
 
                                     <div className="flex items-center justify-between">
@@ -274,7 +274,7 @@ export default function Profile() {
                                             <FiCalendar className="text-green-500" />
                                             <span>Streak</span>
                                         </div>
-                                        <span className="font-bold">{progressState?.streak || 0} days</span>
+                                        <span className="font-bold">{progressState.streak || 0} days</span>
                                     </div>
 
                                     <div className="flex items-center justify-between">
@@ -283,8 +283,8 @@ export default function Profile() {
                                             <span>Badges</span>
                                         </div>
                                         <span className="font-bold">
-                                            {progressState?.badges ? progressState.badges.filter(b => b.unlocked).length : 0} /
-                                            {progressState?.badges ? progressState.badges.length : 0}
+                                            {progressState.badges ? progressState.badges.filter(b => b.unlocked).length : 0} /
+                                            {progressState.badges ? progressState.badges.length : 0}
                                         </span>
                                     </div>
 
@@ -304,7 +304,7 @@ export default function Profile() {
                             <div className="mt-8 bg-zinc-900/50 border border-zinc-700 rounded-lg p-6">
                                 <h2 className="text-xl font-bold mb-4">Badges & Unlocked Skills</h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    {progressState?.badges ? (
+                                    {progressState.badges ? (
                                         progressState.badges.map((badge) => {
                                             // Determine if this is a skill badge by checking the ID format
                                             const isSkillBadge = badge.id.includes('_');
@@ -350,7 +350,7 @@ export default function Profile() {
                                 <h2 className="text-xl font-bold mb-6">Financial Traits</h2>
 
                                 <div className="space-y-8">
-                                    {progressState?.traits && Object.entries(progressState.traits)
+                                    {progressState.traits && Object.entries(progressState.traits)
                                         // Filter out any duplicate trait IDs
                                         .filter(([traitId, _], index, self) =>
                                             index === self.findIndex(([id, _]) => id === traitId)
@@ -441,8 +441,8 @@ export default function Profile() {
                                                                         <div
                                                                             key={idx}
                                                                             className={`h-1.5 flex-1 rounded-full ${skill.levelRequired <= traitLevel
-                                                                                    ? `bg-${traitInfo.color}-500`
-                                                                                    : 'bg-zinc-700'
+                                                                                ? `bg-${traitInfo.color}-500`
+                                                                                : 'bg-zinc-700'
                                                                                 }`}
                                                                             title={`${skill.name} (Level ${skill.levelRequired})`}
                                                                         />
@@ -534,12 +534,12 @@ export default function Profile() {
                             </div>
 
                             {/* Redeemed Rewards Section */}
-                            {progress.redeemedRewards && progress.redeemedRewards.length > 0 && (
+                            {progressState.redeemedRewards && progressState.redeemedRewards.length > 0 && (
                                 <div className="mt-8 bg-zinc-900/50 border border-zinc-700 rounded-lg p-6">
                                     <h2 className="text-xl font-bold mb-4">Your Redeemed Rewards</h2>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {progress.redeemedRewards.map((reward, index) => (
+                                        {progressState.redeemedRewards.map((reward, index) => (
                                             <div key={`${reward.id}-${index}`} className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-lg">
                                                 <div className="text-3xl">{reward.icon}</div>
                                                 <div className="flex-1">
