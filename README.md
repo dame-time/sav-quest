@@ -6,6 +6,15 @@ _This project is part of our Milan Hackathon 2025 submission_
 
 SavQuest is a gamified financial literacy platform that transforms how people learn about money. By connecting to real banking data and using game mechanics inspired by Duolingo, we make financial education engaging, personalized, and effective.
 
+## 📹 Platform Demo
+
+<video width="640" height="360" controls>
+  <source src="./MilanHackathonDemo.mov" type="video/quicktime">
+  Your browser does not support the video tag.
+</video>
+
+**Note:** If the video doesn't play directly in GitHub, you can [download the demo video](./MilanHackathonDemo.mov) to watch it locally.
+
 #### Landing Page
 https://www.savquest.com
 
