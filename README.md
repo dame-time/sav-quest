@@ -8,12 +8,9 @@ SavQuest is a gamified financial literacy platform that transforms how people le
 
 ## 📹 Platform Demo
 
-<video width="640" height="360" controls>
-  <source src="./MilanHackathonDemo.mov" type="video/quicktime">
-  Your browser does not support the video tag.
-</video>
+[![SavQuest Demo Video](https://img.youtube.com/vi/QkpIu0Jm8Ko/0.jpg)](https://youtu.be/QkpIu0Jm8Ko)
 
-**Note:** If the video doesn't play directly in GitHub, you can [download the demo video](./MilanHackathonDemo.mov) to watch it locally.
+**Note:** Click the image above to watch the demo on YouTube. Feel free to put the demo on 2x speed!
 
 #### Landing Page
 https://www.savquest.com
